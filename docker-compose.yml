@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgresBD
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    networks:
+      - kafka-net
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    restart: always
+    networks:
+      - kafka-net
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - kafka-net
+
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8082:8080"
+    depends_on:
+      - kafka
+    restart: always
+    networks:
+      - kafka-net
+
+  wb-service:
+    build:
+      context: .
+    container_name: WBService
+    depends_on:
+      - postgres
+      - kafka
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    restart: always
+    networks:
+      - kafka-net
+
+networks:
+  kafka-net:
+    driver: bridge
