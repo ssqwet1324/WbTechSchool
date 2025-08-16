@@ -19,17 +19,10 @@ func New(usecase *usecase.Usecase) *Handler {
 func (h *Handler) GetOrder(ctx *gin.Context) {
 	orderUID := ctx.Param("order_uid")
 
-	// Сначала ищем в кэше
-	data, exist := h.usecase.GetOrderFromCache(orderUID)
-	if !exist {
-		var err error
-		data, err = h.usecase.GetOrderFromDB(ctx, orderUID)
-		if err != nil {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
-
-			return
-		}
-		_ = h.usecase.SaveOrderInDB(ctx, data)
+	data, err := h.usecase.GetOrder(ctx, orderUID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, data)

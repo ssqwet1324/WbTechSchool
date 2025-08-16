@@ -5,10 +5,11 @@ import (
 	"WbDemoProject/Internal/entity"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"strconv"
 	"sync"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Repository struct {
@@ -77,8 +78,7 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 	}
 
 	// delivery
-	_, err = tx.Exec(ctx, `
-		INSERT INTO delivery (order_uid, name, phone, zip, city, address, region, email)
+	_, err = tx.Exec(ctx, `INSERT INTO delivery (order_uid, name, phone, zip, city, address, region, email)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
 		order.OrderUID,
 		order.Delivery.Name,
@@ -95,7 +95,8 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 
 	// payment
 	_, err = tx.Exec(ctx, `
-		INSERT INTO payment (order_uid, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee)
+		INSERT INTO payment (order_uid, transaction, request_id, currency,
+		                     provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		order.OrderUID,
 		order.Payment.Transaction,
@@ -116,7 +117,8 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 	// items
 	for _, item := range order.Items {
 		_, err = tx.Exec(ctx, `
-			INSERT INTO items (chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status, order_uid)
+			INSERT INTO items (chrt_id, track_number, price, rid, name, sale, size,
+			                   total_price, nm_id, brand, status, order_uid)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
 			item.ChrtID,
 			item.TrackNumber,
@@ -136,11 +138,21 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 		}
 	}
 
+	//при ошибке транзакции сохраняем данные в кеше чтобы их не потерять
 	if err := tx.Commit(ctx); err != nil {
+		err := repo.SaveOrderInCache(order)
+		if err != nil {
+			return fmt.Errorf("repository: cannot commit transaction: %v", err)
+		}
+
 		return fmt.Errorf("PostgresRepository: commit error: %v", err)
 	}
 
-	// добавляем в кэш
+	return nil
+}
+
+// SaveOrderInCache - сохраняем заказ в кэше
+func (repo *Repository) SaveOrderInCache(order *entity.Order) error {
 	repo.Mutex.Lock()
 	repo.Storage[order.OrderUID] = order
 	repo.Mutex.Unlock()
@@ -211,7 +223,8 @@ func (repo *Repository) GetOrderFromDB(ctx context.Context, orderUID string) (*e
 		return nil, fmt.Errorf("PostgresRepository: error getting payment: %v", err)
 	}
 
-	rows, err := repo.DB.Query(ctx, `SELECT chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status
+	rows, err := repo.DB.Query(ctx, `SELECT chrt_id, track_number, price, rid, name, sale,
+    size, total_price, nm_id, brand, status
 	FROM items WHERE order_uid = $1`, orderUID)
 	if err != nil {
 		return nil, fmt.Errorf("PostgresRepository: error getting items: %v", err)
@@ -239,10 +252,6 @@ func (repo *Repository) GetOrderFromDB(ctx context.Context, orderUID string) (*e
 
 		order.Items = append(order.Items, item)
 	}
-
-	repo.Mutex.Lock()
-	repo.Storage[orderUID] = &order
-	repo.Mutex.Unlock()
 
 	return &order, nil
 }

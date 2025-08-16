@@ -41,21 +41,25 @@ func (consumer *Consumer) StartConsumer(ctx context.Context, handler OrderHandle
 		err = json.Unmarshal(msg.Value, &order)
 		if err != nil {
 			log.Printf("Error unmarshalling message: %v", err)
+
+			if err := consumer.reader.CommitMessages(ctx, msg); err != nil {
+				log.Printf("Error committing invalid message: %v", err)
+			}
 			continue
 		}
 
 		// передаем заказ в обработчик
 		if err := handler.HandleOrder(ctx, &order); err != nil {
 			log.Printf("Error handling order: %v", err)
+
+			continue
 		}
 
-		// фиксируем, что сообщение прочитано
+		// фиксируем сообщение
 		if err := consumer.reader.CommitMessages(ctx, msg); err != nil {
 			log.Printf("Error committing message: %v", err)
 		}
 	}
-
-	return nil
 }
 
 func (consumer *Consumer) Close() error {
