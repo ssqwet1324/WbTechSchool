@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Получение заказа по ID</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .json-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Получение заказа по ID</h1>
+        
+        <div class="form-group">
+            <label for="orderId">ID заказа:</label>
+            <input type="text" id="orderId" placeholder="Введите ID заказа" />
+        </div>
+        
+        <button onclick="getOrder()" id="submitBtn">Получить заказ</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function getOrder() {
+            const orderId = document.getElementById('orderId').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            
+            if (!orderId) {
+                showResult('Пожалуйста, введите ID заказа', 'error');
+                return;
+            }
+            
+            // Показываем загрузку
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Загружаем...';
+            showResult('<div class="loading">Загружаем данные...</div>', 'success');
+            
+            try {
+                const response = await fetch(`http://localhost:8081/order/${orderId}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const formattedJson = JSON.stringify(data, null, 2);
+                    showResult(`
+                        <strong>✅ Заказ найден!</strong>
+                        <div class="json-display">${formattedJson}</div>
+                    `, 'success');
+                } else if (response.status === 404) {
+                    showResult('❌ Заказ с таким ID не найден', 'error');
+                } else {
+                    const errorData = await response.json();
+                    showResult(`❌ Ошибка: ${errorData.error || 'Неизвестная ошибка'}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Ошибка соединения: ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Получить заказ';
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+        
+        // Обработка Enter в поле ввода
+        document.getElementById('orderId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getOrder();
+            }
+        });
+    </script>
+</body>
+</html>
