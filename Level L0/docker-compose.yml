@@ -58,13 +58,13 @@ services:
 
   wb-service:
     build:
-      context: ./backend
+      context: backend
     container_name: WBService
     depends_on:
       - postgres
       - kafka
     env_file:
-      - ./backend/.env
+      - backend/.env
     ports:
       - "8081:8081"
     restart: always
