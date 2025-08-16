@@ -17,6 +17,20 @@ import (
 func Run() {
 	server := gin.Default()
 
+	// Добавляем CORS middleware чтобы фронт показывал json
+	server.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
+
 	cfg, err := config.New()
 	if err != nil {
 		log.Fatal(err)
@@ -42,12 +56,14 @@ func Run() {
 			log.Fatal(err)
 		}
 	}(ordersConsumer)
+
 	go func() {
 		for {
 			err := ordersConsumer.StartConsumer(context.Background(), usecase)
 			if err != nil {
 				log.Printf("Kafka not ready, retrying in 5s: %v", err)
 				time.Sleep(5 * time.Second)
+
 				continue
 			}
 			break
