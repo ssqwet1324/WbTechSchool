@@ -12,15 +12,18 @@ type RepositoryProvider interface {
 	GetOrderFromCache(orderUID string) (*entity.Order, bool)
 	GetOrderFromDB(ctx context.Context, orderUID string) (*entity.Order, error)
 	SaveOrderInCache(order *entity.Order) error
+	GetAllOrdersFromDB(ctx context.Context) ([]*entity.Order, error)
 }
 
 type Usecase struct {
-	repo RepositoryProvider
+	repo          RepositoryProvider
+	checkedOrders map[string]bool
 }
 
 func New(repo RepositoryProvider) *Usecase {
 	return &Usecase{
-		repo: repo,
+		repo:          repo,
+		checkedOrders: make(map[string]bool),
 	}
 }
 
@@ -44,9 +47,8 @@ func (u *Usecase) GetOrderFromCache(orderUID string) (*entity.Order, bool) {
 }
 
 // CheckOrderFromCacheInDB - проверяем есть ли заказ который в кэше в БД
-// ВАЖНО: защищает от утечек данных - если заказ есть в кэше, но нет в БД
 func (u *Usecase) CheckOrderFromCacheInDB(ctx context.Context, orderUID string, cacheResponse bool) error {
-	// Если в кэше заказа нет, то выходим
+	// Если в кэше заказа нет то выходим
 	if !cacheResponse {
 		return nil
 	}
@@ -99,11 +101,12 @@ func (u *Usecase) GetOrderFromDB(ctx context.Context, orderUID string) (*entity.
 func (u *Usecase) GetOrder(ctx context.Context, orderUID string) (*entity.Order, error) {
 	//Ищем в кэше ID заказа
 	data, exist := u.GetOrderFromCache(orderUID)
-	if exist {
-		//проверяем БД на случай если там нет заказа
+	//проверяем что заказ уже был проверен чтобы не проверять постоянно бд
+	if exist && !u.checkedOrders[orderUID] {
 		if err := u.CheckOrderFromCacheInDB(ctx, orderUID, exist); err != nil {
 			log.Printf("Warning: failed to check order in DB: %v", err)
 		}
+		u.checkedOrders[orderUID] = true
 
 		return data, nil
 	}
@@ -117,6 +120,15 @@ func (u *Usecase) GetOrder(ctx context.Context, orderUID string) (*entity.Order,
 	// сохраняем в кэш
 	if err := u.SaveOrderInCache(data); err != nil {
 		log.Printf("Warning: failed to save order in cache: %v", err)
+	}
+
+	return data, nil
+}
+
+func (u *Usecase) GetAllOrdersFromDB(ctx context.Context) ([]*entity.Order, error) {
+	data, err := u.repo.GetAllOrdersFromDB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch all orders from DB: %w", err)
 	}
 
 	return data, nil

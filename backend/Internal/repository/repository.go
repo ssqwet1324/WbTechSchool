@@ -4,7 +4,9 @@ import (
 	"WbDemoProject/Internal/config"
 	"WbDemoProject/Internal/entity"
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"sync"
 
@@ -50,12 +52,11 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 	}
 
 	// при ошибке откатить назад
-	defer func(tx pgx.Tx, ctx context.Context) {
-		err := tx.Rollback(ctx)
-		if err != nil {
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			fmt.Printf("PostgresRepository: cannot rollback transaction: %v", err)
 		}
-	}(tx, ctx)
+	}()
 
 	// orders
 	_, err = tx.Exec(ctx, `
@@ -144,9 +145,12 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 		if err != nil {
 			return fmt.Errorf("repository: cannot commit transaction: %v", err)
 		}
+		log.Println("заказ не сохранен в бд но сохранен в кэше", err)
 
 		return fmt.Errorf("PostgresRepository: commit error: %v", err)
 	}
+
+	log.Printf("заказ сохранен")
 
 	return nil
 }
@@ -254,4 +258,110 @@ func (repo *Repository) GetOrderFromDB(ctx context.Context, orderUID string) (*e
 	}
 
 	return &order, nil
+}
+
+// GetAllOrdersFromDB - восстанавливаем кэш
+func (repo *Repository) GetAllOrdersFromDB(ctx context.Context) ([]*entity.Order, error) {
+	rows, err := repo.DB.Query(ctx, `
+       SELECT order_uid, track_number, entry, locale, internal_signature,
+              customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard
+       FROM orders`)
+	if err != nil {
+		return nil, fmt.Errorf("PostgresRepository: error getting all orders: %v", err)
+	}
+	defer rows.Close()
+
+	var orders []*entity.Order
+
+	for rows.Next() {
+		var order entity.Order
+		err := rows.Scan(
+			&order.OrderUID,
+			&order.TrackNumber,
+			&order.Entry,
+			&order.Locale,
+			&order.InternalSignature,
+			&order.CustomerID,
+			&order.DeliveryService,
+			&order.ShardKey,
+			&order.SmID,
+			&order.DateCreated,
+			&order.OofShard,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("PostgresRepository: error scanning order: %v", err)
+		}
+
+		// delivery
+		err = repo.DB.QueryRow(ctx, `
+			SELECT name, phone, zip, city, address, region, email
+			FROM delivery WHERE order_uid = $1`, order.OrderUID).Scan(
+			&order.Delivery.Name,
+			&order.Delivery.Phone,
+			&order.Delivery.Zip,
+			&order.Delivery.City,
+			&order.Delivery.Address,
+			&order.Delivery.Region,
+			&order.Delivery.Email,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("PostgresRepository: error getting delivery: %v", err)
+		}
+
+		// payment
+		err = repo.DB.QueryRow(ctx, `
+			SELECT transaction, request_id, currency, provider, amount, payment_dt,
+				   bank, delivery_cost, goods_total, custom_fee
+			FROM payment WHERE order_uid = $1`, order.OrderUID).Scan(
+			&order.Payment.Transaction,
+			&order.Payment.RequestID,
+			&order.Payment.Currency,
+			&order.Payment.Provider,
+			&order.Payment.Amount,
+			&order.Payment.PaymentDT,
+			&order.Payment.Bank,
+			&order.Payment.DeliveryCost,
+			&order.Payment.GoodsTotal,
+			&order.Payment.CustomFee,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("PostgresRepository: error getting payment: %v", err)
+		}
+
+		// items
+		itemRows, err := repo.DB.Query(ctx, `
+			SELECT chrt_id, track_number, price, rid, name, sale,
+			       size, total_price, nm_id, brand, status
+			FROM items WHERE order_uid = $1`, order.OrderUID)
+		if err != nil {
+			return nil, fmt.Errorf("PostgresRepository: error getting items: %v", err)
+		}
+
+		for itemRows.Next() {
+			var item entity.Item
+			err := itemRows.Scan(
+				&item.ChrtID,
+				&item.TrackNumber,
+				&item.Price,
+				&item.Rid,
+				&item.Name,
+				&item.Sale,
+				&item.Size,
+				&item.TotalPrice,
+				&item.NmID,
+				&item.Brand,
+				&item.Status,
+			)
+			if err != nil {
+				itemRows.Close()
+				return nil, fmt.Errorf("PostgresRepository: error scanning item: %v", err)
+			}
+			order.Items = append(order.Items, item)
+		}
+		itemRows.Close()
+
+		orders = append(orders, &order)
+	}
+
+	return orders, nil
 }

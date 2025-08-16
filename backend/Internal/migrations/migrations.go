@@ -82,7 +82,6 @@ CREATE TABLE IF NOT EXISTS items (
 			return nil
 		}
 
-		// Пишем в лог и ждём перед повтором
 		fmt.Printf("Не удалось создать таблицы (попытка %d/%d): %v\n", i+1, maxRetries, err)
 		time.Sleep(retryDelay)
 	}

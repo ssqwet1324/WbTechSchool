@@ -31,24 +31,42 @@ func Run() {
 		c.Next()
 	})
 
+	//кфг
 	cfg, err := config.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//репо с дб
 	repo, err := repository.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//миграции
 	migration := migrations.New(repo)
 	err = migration.InitTables(context.Background())
 	if err != nil {
 		log.Fatal("database dont created", err)
 	}
 
+	//бизнес логика
 	usecase := usecase.New(repo)
 
+	//пример восстановления данных из бд в кэш
+	orders, err := usecase.GetAllOrdersFromDB(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, order := range orders {
+		err := usecase.SaveOrderInCache(order)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	//инициализируем консюмера
 	ordersConsumer := kafka.New([]string{"kafka:9092"}, "orders", "1")
 	defer func(ordersConsumer *kafka.Consumer) {
 		err := ordersConsumer.Close()

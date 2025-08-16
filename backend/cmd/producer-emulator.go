@@ -16,7 +16,7 @@ func main() {
 	}
 
 	orderJson := `{
-  "order_uid": "ABC123456",
+  "order_uid": "ABC12345678",
   "track_number": "WBILMTESTTRACK",
   "entry": "WBIL",
   "delivery": {
