@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const workerCount = 5
+
 func worker(id int, works <-chan int, results chan<- int) {
 	for n := range works {
 		fmt.Println("Worker", id, "start", n)
@@ -19,7 +21,7 @@ func main() {
 	results := make(chan int, 50)
 
 	// Запускаем 5 воркеров читающих результат
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= workerCount; i++ {
 		go worker(i, works, results)
 	}
 
