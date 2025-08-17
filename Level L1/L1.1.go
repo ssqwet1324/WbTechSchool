@@ -28,4 +28,9 @@ func main() {
 	a.SayGoodbye()
 	//тут выводим поля благодаря встраиванию
 	fmt.Println(a.Age, a.Name, a.Phone)
+	//Выводит:
+	//Hi, I am Gik, my phone 123
+	//Goodbye Gik, my phone 123
+	//13 Gik 123
+
 }
