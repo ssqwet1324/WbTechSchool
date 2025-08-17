@@ -28,6 +28,7 @@ func SqrtNums(num <-chan int) <-chan int {
 	return c
 }
 
+// вызываем
 func main() {
 	for n := range SqrtNums(GiveNums(2, 4, 6, 8, 10)) {
 		fmt.Println(n)
