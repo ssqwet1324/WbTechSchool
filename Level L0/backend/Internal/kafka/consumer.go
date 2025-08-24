@@ -4,8 +4,9 @@ import (
 	"WbDemoProject/Internal/entity"
 	"context"
 	"encoding/json"
-	"github.com/segmentio/kafka-go"
 	"log"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type OrderHandler interface {

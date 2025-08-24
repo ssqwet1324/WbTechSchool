@@ -2,8 +2,9 @@ package handler
 
 import (
 	"WbDemoProject/Internal/usecase"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {

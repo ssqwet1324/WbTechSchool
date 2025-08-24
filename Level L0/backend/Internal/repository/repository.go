@@ -159,7 +159,7 @@ func (repo *Repository) SaveOrderInDB(ctx context.Context, order *entity.Order) 
 func (repo *Repository) SaveOrderInCache(order *entity.Order) error {
 	repo.Mutex.Lock()
 	repo.Storage[order.OrderUID] = order
-	repo.Mutex.Unlock()
+	defer repo.Mutex.Unlock()
 
 	return nil
 }
@@ -168,7 +168,7 @@ func (repo *Repository) SaveOrderInCache(order *entity.Order) error {
 func (repo *Repository) GetOrderFromCache(orderUID string) (*entity.Order, bool) {
 	repo.Mutex.RLock()
 	order, ok := repo.Storage[orderUID]
-	repo.Mutex.RUnlock()
+	defer repo.Mutex.RUnlock()
 
 	return order, ok
 }
