@@ -7,6 +7,7 @@ import (
 	"unicode"
 )
 
+// UnpackingString - распаковка строк
 func UnpackingString(str string) (string, error) {
 	// пустая строка
 	if str == "" {
