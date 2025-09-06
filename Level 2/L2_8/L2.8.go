@@ -8,6 +8,7 @@ import (
 	"github.com/beevik/ntp"
 )
 
+// GiveNowTime - получаем текущее время
 func GiveNowTime() (time.Time, error) {
 	t, err := ntp.Time("0.beevik-ntp.pool.ntp.org")
 	if err != nil {
