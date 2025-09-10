@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 // Options - структура для хранения данных флагов
@@ -21,52 +22,84 @@ type Options struct {
 
 // SearchString - функция для нахождения строки
 func SearchString(scanner *bufio.Scanner, options *Options, searchedStr string) {
-	lineNum := 0
-	afterCount := 0
-	beforeBuffer := make([]string, 0, options.Before)
+	lineNum := 0                                      // номер строки
+	afterCount := 0                                   // количество строк после шаблона для(-A)
+	beforeBuffer := make([]string, 0, options.Before) // строки до шаблона для(-B)
+	matches := 0                                      // количество найденных совпадений
+	printedMatches := make(map[string]bool)           // чтобы не дублировать совпадения
 
-	// проходимся по строкам в файле
 	for scanner.Scan() {
 		text := scanner.Text()
 		lineNum++
 
-		// проверка совпала строка или нет
-		matched := text == searchedStr
+		// // проверка для флага -i
+		checkText := text
+		checkStr := searchedStr
+		if options.Ignore {
+			checkText = strings.ToLower(checkText)
+			checkStr = strings.ToLower(checkStr)
+		}
+
+		// проверка для флага -F
+		matched := false
+		if options.Fixed {
+			matched = strings.Contains(checkText, checkStr)
+		} else {
+			matched = checkText == checkStr
+		}
+
+		// проверка для флага -v
+		if options.Invert {
+			matched = !matched
+		}
+
+		// // проверка для флага -c
+		if matched {
+			matches++
+		}
+		if options.Count {
+			continue
+		}
 
 		switch {
-		//если совпала строка
 		case matched:
-			// печатаем строки из среза для флага -B
-			if options.Before > 0 {
-				for _, b := range beforeBuffer {
-					fmt.Println(b)
+			// выводим буфер перед совпадением (-B)
+			for _, b := range beforeBuffer {
+				fmt.Println(b)
+			}
+
+			// выводим совпадение, если его еще не выводили
+			if !printedMatches[text] {
+				printedMatches[text] = true
+				if options.LineNum {
+					fmt.Printf("%d:%s\n", lineNum, text)
+				} else {
+					fmt.Println(text)
 				}
 			}
 
-			fmt.Println(text)
-
-			// включаем -A
 			afterCount = options.After
-
-			// сбрасываем буфер
 			beforeBuffer = beforeBuffer[:0]
 
-		// тут допилить количетсво строк совпадающиъ
-
-		// выводим n строк после совпадения для -A
+			// активируем -A
 		case afterCount > 0:
 			fmt.Println(text)
 			afterCount--
 
-		// накапливаем строки для -B
+			// тут активируем -B
 		default:
 			if options.Before > 0 {
 				if len(beforeBuffer) == options.Before {
-					beforeBuffer = beforeBuffer[1:] // удаляем старую строку
+					beforeBuffer = beforeBuffer[1:]
 				}
 				beforeBuffer = append(beforeBuffer, text)
 			}
 		}
+	}
+
+	// считаем количество строк для шаблона -n
+	if options.Count {
+		fmt.Println(matches)
 	}
 }
 
@@ -124,7 +157,7 @@ func main() {
 	} else {
 		file, err := os.Open(filename)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("ошибка открытия файла", err)
 		}
 		defer file.Close()
 		scanner = bufio.NewScanner(file)
