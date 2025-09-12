@@ -167,15 +167,15 @@ func ExternalSort(filename string, column int, numeric, reverse, unique bool) er
 
 func main() {
 	// Определяем флаги
-	k := flag.Int("k", 1, "sort by column number")
-	n := flag.Bool("n", false, "numeric sort")
-	r := flag.Bool("r", false, "reverse sort")
+	k := flag.Int("k", 1, "search by column number")
+	n := flag.Bool("n", false, "numeric search")
+	r := flag.Bool("r", false, "reverse search")
 	u := flag.Bool("u", false, "unique lines only")
 
 	// комбинированные флаги типа -nr
-	flag.BoolVar(n, "nr", false, "numeric reverse sort ")
-	flag.BoolVar(r, "rn", false, "reverse numeric sort ")
-	flag.BoolVar(n, "nru", false, "numeric reverse unique sort ")
+	flag.BoolVar(n, "nr", false, "numeric reverse search ")
+	flag.BoolVar(r, "rn", false, "reverse numeric search ")
+	flag.BoolVar(n, "nru", false, "numeric reverse unique search ")
 
 	flag.Parse()
 

@@ -28,10 +28,10 @@ func UnpackingString(str string) (string, error) {
 
 	runes := []rune(str)
 	var result []rune
-	var pred rune //предыдущий символ
+	var pred rune // предыдущий символ
 
 	for i := 0; i < len(runes); i++ {
-		r := runes[i] //текущий символ
+		r := runes[i] // текущий символ
 
 		if unicode.IsDigit(r) {
 			// тут проверка на строку такого типа: 4a
