@@ -26,5 +26,5 @@ func main() {
 		scanner = bufio.NewScanner(file)
 	}
 
-	search.SearchString(scanner, &options, pattern)
+	search.PatternString(scanner, &options, pattern)
 }
