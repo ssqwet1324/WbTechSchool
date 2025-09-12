@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-func SearchString(scanner *bufio.Scanner, options *cli.Options, searchedStr string) {
+// PatternString - поиск строк по шаблону
+func PatternString(scanner *bufio.Scanner, options *cli.Options, searchedStr string) {
 	lineNum := 0                                      // номер строки
 	afterCount := 0                                   // количество строк после шаблона для(-A)
 	beforeBuffer := make([]string, 0, options.Before) // строки до шаблона для(-B)

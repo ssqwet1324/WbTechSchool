@@ -16,6 +16,7 @@ type Options struct {
 	LineNum bool // -n
 }
 
+// ParseOptions - подключаем флаги
 func ParseOptions() (Options, string, string) {
 	// Флаги
 	flagA := flag.Int("A", 0, "вывести N строк после найденной строки")
