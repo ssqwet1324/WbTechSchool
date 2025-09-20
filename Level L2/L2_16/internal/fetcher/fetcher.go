@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -25,10 +26,10 @@ func New(timeout time.Duration) *Fetcher {
 }
 
 // Fetch - получаем тело страницы (body)
-func (fetcher *Fetcher) Fetch(url string) ([]byte, error) {
-	req, err := fetcher.client.Get(url)
+func (fetcher *Fetcher) Fetch(link string) ([]byte, string, error) {
+	req, err := fetcher.client.Get(link)
 	if err != nil {
-		return nil, errors.New("Fetch: error get request: " + url + ": " + err.Error())
+		return nil, "", errors.New("Fetch: error get request: " + link + ": " + err.Error())
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -38,14 +39,25 @@ func (fetcher *Fetcher) Fetch(url string) ([]byte, error) {
 		}
 	}(req.Body)
 
+	// проверяем что смогли подключиться
 	if req.StatusCode != http.StatusOK {
-		return nil, errors.New("Fetch: error fetching " + url + ": " + req.Status)
+		return nil, "", errors.New("Fetch: error fetching " + link + ": " + req.Status)
 	}
 
+	// получаем body сайта
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return nil, errors.New("Fetch: error reading body: " + url + ": " + err.Error())
+		return nil, "", errors.New("Fetch: error reading body: " + link + ": " + err.Error())
 	}
 
-	return body, nil
+	// парсим ссылку для получения домена
+	u, err := url.Parse(link)
+	if err != nil {
+		return nil, "", errors.New("Fetch: error parsing domain: " + link + ": " + err.Error())
+	}
+
+	// получаем домен
+	domain := u.Scheme + "://" + u.Host
+
+	return body, domain, nil
 }
