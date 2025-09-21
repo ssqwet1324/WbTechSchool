@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-// Resources - структура списков для хранения элементов внутри тегов
+// Resources хранит списки всех найденных ресурсов на странице
 type Resources struct {
 	CSS  []string
 	JS   []string
@@ -18,34 +18,35 @@ type Resources struct {
 	Link []string
 }
 
-// Parser - парсим все ресурсы на странице
-func Parser(body []byte, domain string) (*Resources, error) {
+// Parser - парсит HTML и собирает все ресурсы (CSS, JS, img, ссылки)
+func Parser(body []byte, domain string, includeLinks bool) (*Resources, error) {
 	resources := &Resources{
 		CSS:  make([]string, 0),
 		JS:   make([]string, 0),
 		Img:  make([]string, 0),
 		Link: make([]string, 0),
 	}
+
 	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		return nil, errors.New("Parse: error parsing body: " + err.Error())
+		return nil, errors.New("Parser: error parsing body: " + err.Error())
 	}
 
 	var links []string
 
-	// для рекурсивного обхода
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode {
-			// находим все основные теги для файлов
 			switch n.Data {
 			case "a":
-				for _, a := range n.Attr {
-					if a.Key == "href" {
-						if !strings.HasPrefix(a.Val, "http://") && !strings.HasPrefix(a.Val, "https://") {
-							links = append(links, resolveURL(a.Val, domain))
-						} else {
-							links = append(links, a.Val)
+				if includeLinks {
+					for _, attr := range n.Attr {
+						if attr.Key == "href" {
+							if !strings.HasPrefix(attr.Val, "http://") && !strings.HasPrefix(attr.Val, "https://") {
+								links = append(links, resolveURL(attr.Val, domain))
+							} else {
+								links = append(links, attr.Val)
+							}
 						}
 					}
 				}
@@ -62,17 +63,20 @@ func Parser(body []byte, domain string) (*Resources, error) {
 					}
 				}
 			case "link":
-				var href, rel string
 				for _, attr := range n.Attr {
-					if attr.Key == "href" {
-						href = attr.Val
+					if attr.Key == "rel" && attr.Val == "stylesheet" {
+						for _, a := range n.Attr {
+							if a.Key == "href" {
+								resources.CSS = append(resources.CSS, resolveURL(a.Val, domain))
+							}
+						}
+					} else if includeLinks && attr.Key == "rel" && (attr.Val == "canonical" || attr.Val == "alternate") {
+						for _, a := range n.Attr {
+							if a.Key == "href" {
+								links = append(links, resolveURL(a.Val, domain))
+							}
+						}
 					}
-					if attr.Key == "rel" {
-						rel = attr.Val
-					}
-				}
-				if rel == "stylesheet" {
-					resources.CSS = append(resources.CSS, resolveURL(href, domain))
 				}
 			}
 		}
@@ -88,7 +92,7 @@ func Parser(body []byte, domain string) (*Resources, error) {
 	return resources, nil
 }
 
-// resolveURL - создаем из относительной ссылки полную
+// resolveURL создаёт абсолютный URL из относительного
 func resolveURL(relative, domain string) string {
 	base, err := url.Parse(domain)
 	if err != nil {
@@ -102,9 +106,8 @@ func resolveURL(relative, domain string) string {
 	return base.ResolveReference(rel).String()
 }
 
-// deleteDuplies - удаляем дубликаты url
+// deleteDuplies удаляет дубли в списке ссылок
 func deleteDuplies(urls []string) []string {
 	slices.Sort(urls)
-
 	return slices.Compact(urls)
 }

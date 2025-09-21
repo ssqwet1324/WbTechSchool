@@ -1,8 +1,8 @@
 package main
 
 import (
+	"L2_16/internal/crawler"
 	"L2_16/internal/fetcher"
-	"L2_16/internal/parser"
 	"L2_16/internal/reader"
 	"fmt"
 	"log"
@@ -23,30 +23,21 @@ func main() {
 			log.Fatal("download depth is not a number", err)
 		}
 
-		body, domain, err := fetcher.New(30 * time.Second).Fetch(url)
+		fmt.Printf("Начинаем скачивание с глубиной %d: %s\n", depthInt, url)
+
+		// создаем состояние краулера
+		state := crawler.NewCrawlerState(url)
+
+		// создаем f
+		f := fetcher.New(30 * time.Second)
+
+		// запускаем рекурсивное скачивание
+		err = crawler.CrawlPage(url, depthInt, state, f)
 		if err != nil {
-			log.Println("Ошибка загрузки:", err)
+			log.Printf("Ошибка скачивания: %v", err)
 			continue
 		}
 
-		// тут формируем файлы всех страниц по глубине рекурсии
-		if depthInt > 1 {
-			res, err := parser.Parser(body, domain)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			for _, link := range res.Link {
-				fmt.Println(link)
-			}
-
-			fmt.Println(res.CSS)
-		} else {
-			fmt.Println(string(body))
-			// тут мы будем формировать файл только той страницы на которую указан url
-		}
-
-		fmt.Println("домен:", domain)
+		fmt.Printf("Скачивание завершено! Обработано %d страниц\n", state.VisitedCount())
 	}
 }
