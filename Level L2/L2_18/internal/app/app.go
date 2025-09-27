@@ -5,6 +5,7 @@ import (
 	"L2_18/internal/middleware"
 	"L2_18/internal/repository"
 	"L2_18/internal/usecase"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -13,12 +14,16 @@ import (
 
 // Run - старт сервиса
 func Run() {
-	service := gin.Default()
+	logger := middleware.NewZapLogger()
 
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatalf("can't initialize zap logger: %v", err)
-	}
+	defer func(logger *zap.Logger) {
+		err := logger.Sync()
+		if err != nil {
+			fmt.Println("Error sync zap logger")
+		}
+	}(logger)
+
+	service := gin.New()
 
 	service.Use(middleware.LogRequest(logger))
 
