@@ -77,7 +77,6 @@ func (uc *UseCase) GetEventForDay(userID, date string) ([]entity.Calendar, error
 	return events, nil
 }
 
-// GetEventsForWeek - получить события на недел
 // GetEventsForWeek - получить события на неделю
 func (uc *UseCase) GetEventsForWeek(userID, date string) ([]entity.Calendar, error) {
 	dateTime, err := ParseDate(date)

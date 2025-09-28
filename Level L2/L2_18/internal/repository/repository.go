@@ -3,7 +3,6 @@ package repository
 import (
 	"L2_18/internal/entity"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -190,22 +189,12 @@ func (repo *Repository) DeleteEvent(event entity.Calendar) error {
 		return errors.New("no events on this date")
 	}
 
-	fmt.Println("список events", events)
-
-	// убираем из среза не нужное событие(проверяем имя и дату)
-	filtered := make([]entity.Calendar, 0, len(events))
 	for _, e := range events {
-		if !(e.NameEvent == event.NameEvent && e.DataEvent.Equal(event.DataEvent)) {
-			filtered = append(filtered, e)
+		if e.DataEvent == event.DataEvent && e.NameEvent == event.NameEvent {
+			delete(userEvents, data)
+		} else {
+			return errors.New("no events on this date")
 		}
-	}
-
-	// если больше нет событий на дату удаляем ключ
-	if len(filtered) == 0 {
-		delete(userEvents, data)
-	} else {
-		// сохраняем измененный срез
-		userEvents[data] = filtered
 	}
 
 	repo.Log.Info("Deleting event", zap.String("event", event.NameEvent), zap.String("date", data.String()))
