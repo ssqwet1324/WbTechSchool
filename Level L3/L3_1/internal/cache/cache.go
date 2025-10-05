@@ -53,7 +53,7 @@ func (c *Cache) GetNotifyInCash(ctx context.Context, key string) (entity.NotifyC
 	return notifyCash, nil
 }
 
-// DeleteNotifyInCash удаляет уведомление из кэша по ключу.
+// DeleteNotifyInCash - удаляет уведомление из кэша по ключу
 func (c *Cache) DeleteNotifyInCash(ctx context.Context, key string) error {
 	if err := c.cache.Del(ctx, key); err != nil {
 		return fmt.Errorf("delete notify in cash err: %v", err)
@@ -62,7 +62,7 @@ func (c *Cache) DeleteNotifyInCash(ctx context.Context, key string) error {
 	return nil
 }
 
-// GetAllNotifyKeys - получаем ключи уведомлений
+// GetAllNotifyKeys - получаем ключи уведомлений(как заглушка)
 func (c *Cache) GetAllNotifyKeys(ctx context.Context) ([]string, error) {
 	var (
 		cursor uint64 = 0

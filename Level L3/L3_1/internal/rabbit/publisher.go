@@ -21,7 +21,6 @@ func NewPublisher(client *rabbitmq.Publisher) *Publisher {
 
 // Publish отправляет сообщение в очередь
 func (p *Publisher) Publish(queueName string, data []byte) error {
-	fmt.Println(queueName, "сообщение", data)
 	return p.client.Publish(data, queueName, "application/json")
 }
 
@@ -31,8 +30,6 @@ func (p *Publisher) PublishNotification(queueName string, notification map[strin
 	if err != nil {
 		return fmt.Errorf("failed to marshal notification: %w", err)
 	}
-
-	fmt.Println("Уведомление:", string(data))
 
 	return p.Publish(queueName, data)
 }

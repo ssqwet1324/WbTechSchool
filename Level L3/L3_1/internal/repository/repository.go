@@ -59,6 +59,7 @@ func (r *Repository) CreateNotification(ctx context.Context, notify entity.Notif
 		zlog.Logger.Err(err).Msg("Repository.CreateNotification")
 		return fmt.Errorf("error inserting notification: %w", err)
 	}
+
 	return nil
 }
 
@@ -109,11 +110,7 @@ func (r *Repository) DeleteNotification(ctx context.Context, notifyID uuid.UUID)
 
 // GetNotifications - получить все уведомления по userID
 func (r *Repository) GetNotifications(ctx context.Context, userID string) ([]entity.Notify, error) {
-	query := `
-		SELECT notify_id, title, body, status, sending_date
-		FROM notifications
-		WHERE user_id = $1
-	`
+	query := `SELECT notify_id, title, body, status, sending_date FROM notifications WHERE user_id = $1 `
 	rows, err := r.DB.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query notifications: %w", err)

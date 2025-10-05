@@ -4,22 +4,26 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
 // Config - структура конфига
 type Config struct {
-	DbName     string `env:"DB_NAME"`
-	DbUser     string `env:"DB_USER"`
-	DbPassword string `env:"DB_PASSWORD"`
-	DbHost     string `env:"DB_HOST"`
-	DbPort     int    `env:"DB_PORT"`
-	TimeZone   string `env:"TIMEZONE"`
-	RedisAddr  string `env:"REDIS_ADDR"`
-	RabbitURL  string `env:"RABBIT_URL"`
-	MaxRetries int    `env:"MAX_RETRIES"`
-	RetryDelay int    `env:"RETRY_DELAY"`
+	DbName          string        `env:"DB_NAME"`
+	DbUser          string        `env:"DB_USER"`
+	DbPassword      string        `env:"DB_PASSWORD"`
+	DbHost          string        `env:"DB_HOST"`
+	DbPort          int           `env:"DB_PORT"`
+	TimeZone        string        `env:"TIMEZONE"`
+	RedisAddr       string        `env:"REDIS_ADDR"`
+	RabbitURL       string        `env:"RABBIT_URL"`
+	MaxRetries      int           `env:"MAX_RETRIES"`
+	RetryDelay      time.Duration `env:"RETRY_DELAY"`
+	MaxOpenConns    int           `env:"MAX_OPEN_CONNS"`
+	MaxIdleConns    int           `env:"MAX_IDLE_CONNS"`
+	ConnMaxLifetime time.Duration `env:"CONN_MAX_LIFETIME"`
 }
 
 // New - конструктор
@@ -52,7 +56,25 @@ func New() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error converting RETRY_DELAY: %w", err)
 	}
-	cfg.RetryDelay = retryDelayInt
+	cfg.RetryDelay = time.Duration(retryDelayInt)
+
+	maxOpenConnsInt, err := strconv.Atoi(os.Getenv("MAX_OPEN_CONNS"))
+	if err != nil {
+		return nil, fmt.Errorf("error converting MAX_OPEN_CONNS: %w", err)
+	}
+	cfg.MaxOpenConns = maxOpenConnsInt
+
+	maxIdleConnsInt, err := strconv.Atoi(os.Getenv("MAX_IDLE_CONNS"))
+	if err != nil {
+		return nil, fmt.Errorf("error converting MAX_IDLE_CONNS: %w", err)
+	}
+	cfg.MaxIdleConns = maxIdleConnsInt
+
+	connMaxLifetimeInt, err := strconv.Atoi(os.Getenv("CONN_MAX_LIFETIME"))
+	if err != nil {
+		return nil, fmt.Errorf("error converting CONN_MAX_LIFETIME: %w", err)
+	}
+	cfg.ConnMaxLifetime = time.Duration(connMaxLifetimeInt)
 
 	return &cfg, nil
 }

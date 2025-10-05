@@ -11,7 +11,6 @@ import (
 	"L3_1/internal/worker"
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/wb-go/wbf/dbpg"
@@ -21,53 +20,49 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
-// Run запускает HTTP-сервис уведомлений и фонового воркера
+// Run - запускаем сервис
 func Run() {
 	server := ginext.New()
 
+	// Logger
 	zlog.Init()
 
+	// Config
 	cfg, err := config.New()
 	if err != nil {
 		panic(err)
 	}
 
+	// Repository
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
 		cfg.DbUser,
 		cfg.DbPassword,
 		cfg.DbHost,
-		strconv.Itoa(cfg.DbPort),
+		cfg.DbPort,
 		cfg.DbName,
 	)
 
 	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    10,
-		MaxIdleConns:    5,
-		ConnMaxLifetime: 30 * time.Minute,
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime * time.Minute,
 	})
 
-	// --- Миграции ---
+	// Migrations
 	migration := migrations.New(repo, cfg)
 	if err := migration.InitNotifyTable(context.Background()); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
 
-	// --- Redis ---
-	redisAddr := "redis:6379"
-	if cfg.RedisAddr != "" {
-		redisAddr = cfg.RedisAddr
-	}
-	redisClient := redis.New(redisAddr, "", 0)
+	// Redis
+	redisClient := redis.New(cfg.RedisAddr, "", 0)
 	cacheNotify := cache.New(redisClient)
 
 	useCaseNotify := usecase.New(repo, cacheNotify)
 
-	// --- RabbitMQ ---
-	rabbitURL := "amqp://guest:guest@rabbitmq:5672/"
-	if cfg.RabbitURL != "" {
-		rabbitURL = cfg.RabbitURL
-	}
+	// RabbitMQ
+	rabbitURL := cfg.RabbitURL
 
 	conn, err := rabbitmq.Connect(rabbitURL, cfg.MaxRetries, 2*time.Second)
 	if err != nil {
@@ -84,16 +79,19 @@ func Run() {
 	rmqPublisher := rabbitmq.NewPublisher(channel, "")
 	publisher := rabbit.NewPublisher(rmqPublisher)
 
+	// Worker
 	w := worker.New(context.Background(), useCaseNotify, publisher)
 	go w.Run()
 
+	// Handler
 	handlerNotify := handler.New(useCaseNotify, w)
+
+	// Handlers
 	server.POST("/notify", handlerNotify.CreateNotification)
 	server.DELETE("/notify/:notifyID", handlerNotify.DeleteNotification)
 	server.GET("/notify/:notifyID", handlerNotify.CheckStatusNotification)
 	server.GET("/notifications/:userID", handlerNotify.GetAllNotifications)
 
-	// --- HTTP Server ---
 	if err := server.Run(":8081"); err != nil {
 		panic(err)
 	}

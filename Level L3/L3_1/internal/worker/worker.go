@@ -108,12 +108,14 @@ func (w *Worker) SendNotification(notify entity.NotifyCache) {
 		"body":       notify.Body,
 		"event_time": notify.EventTime,
 	})
+
 	// повторная отправка
 	if err != nil {
 		zlog.Logger.Err(err).Str("title", notify.Title).Msg("Ошибка маршала уведомления")
 		w.RetryNotify(notify)
 		return
 	}
+
 	// отправляем в очередь
 	if err := w.publisher.Publish("notify_queue", data); err != nil {
 		zlog.Logger.Err(err).Str("title", notify.Title).Msg("Ошибка отправки в RabbitMQ")

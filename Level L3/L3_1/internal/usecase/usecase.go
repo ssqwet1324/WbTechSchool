@@ -80,6 +80,7 @@ func (u *UseCaseNotify) CreateNotification(ctx context.Context, notify entity.No
 	}
 
 	zlog.Logger.Info().Str("notifyID", notify.NotifyID.String()).Msg("Notification created")
+
 	return notifyCache, nil
 }
 
@@ -100,8 +101,8 @@ func (u *UseCaseNotify) CheckStatusNotification(ctx context.Context, notifyID st
 	if err != nil {
 		return "", fmt.Errorf("CheckStatusNotification: %w", err)
 	}
-	return status, nil
 
+	return status, nil
 }
 
 // DeleteNotification - удаляем уведомление
@@ -110,18 +111,18 @@ func (u *UseCaseNotify) DeleteNotification(ctx context.Context, notifyID string)
 	if err != nil {
 		return fmt.Errorf("DeleteNotification: %w", err)
 	}
-	zlog.Logger.Info().Str("notifyID", notifyIDUUID.String()).Msg("Notification deleted")
 
 	if err := u.repository.DeleteNotification(ctx, notifyIDUUID); err != nil {
 		return fmt.Errorf("DeleteNotification: %w", err)
 	}
 
-	// удаляем из кэша (передаём сырой notifyID, ключ строится внутри)
+	// удаляем из кэша
 	if err := u.DeleteNotifyInCash(ctx, notifyID); err != nil {
 		zlog.Logger.Warn().Err(err).Msg("Failed to delete notify from cache")
 	}
 
 	zlog.Logger.Info().Str("notifyID", notifyID).Msg("Notification deleted")
+
 	return nil
 }
 
@@ -147,7 +148,7 @@ func (u *UseCaseNotify) GetNearNotify(ctx context.Context) (*entity.NotifyCache,
 	// получаем все ключи
 	keys, err := u.GetAllNotifyKeys(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetNearNotify: %w", err)
 	}
 
 	// проверяем есть ли ключи в кэше

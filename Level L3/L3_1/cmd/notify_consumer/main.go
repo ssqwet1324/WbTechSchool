@@ -8,7 +8,7 @@ import (
 	"github.com/wb-go/wbf/rabbitmq"
 )
 
-// Пример простого консюмера, который читает сообщения из очереди notify_queue и печатает их в stdout.
+// консюмер
 func main() {
 	conn, err := rabbitmq.Connect("amqp://guest:guest@localhost:5672/", 5, 2*time.Second)
 	if err != nil {

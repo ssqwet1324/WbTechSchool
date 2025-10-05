@@ -34,7 +34,7 @@ func (m *Migration) InitNotifyTable(ctx context.Context) error {
 	CREATE INDEX IF NOT EXISTS idx_notifications_sending_date ON notifications (sending_date);`
 
 	maxRetries := m.cfg.MaxRetries
-	retryDelay := time.Duration(m.cfg.RetryDelay) * time.Second
+	retryDelay := m.cfg.RetryDelay * time.Second
 
 	var err error
 	for i := 0; i < maxRetries; i++ {
