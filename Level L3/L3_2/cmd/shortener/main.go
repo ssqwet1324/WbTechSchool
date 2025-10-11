@@ -1,5 +1,9 @@
 package main
 
-func main() {
+import (
+	"shortener/internal/app"
+)
 
+func main() {
+	app.Run()
 }

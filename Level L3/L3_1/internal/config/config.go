@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/wb-go/wbf/zlog"
 )
 
 // Config - структура конфига
@@ -38,6 +39,7 @@ func New() (*Config, error) {
 
 	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
+		zlog.Logger.Error().Msg("error converting DB_PORT")
 		return nil, fmt.Errorf("error converting DB_PORT: %w", err)
 	}
 	cfg.DbPort = dbPort
