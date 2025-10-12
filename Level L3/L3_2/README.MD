@@ -21,9 +21,10 @@
 -   **База данных**: PostgreSQL
 -   **Клиент Redis**: Go-Redis v8 (`github.com/go-redis/redis/v8`)
 -   **Переменные окружения**: godotenv (`github.com/joho/godotenv`)
+
 Все зависимости устанавливаются автоматически через:
 ```bash
-go mod tydy
+go mod tidy
 ```
 
 ## Запросы для работы
