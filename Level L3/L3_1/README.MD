@@ -19,10 +19,7 @@
 - Gin (`github.com/gin-gonic/gin`) — HTTP сервер.
 - Zerolog (`github.com/rs/zerolog`) — логирование.
 - Go-Redis v8 (`github.com/go-redis/redis/v8`) — клиент Redis.
-- amqp091-go (`github.com/rabbitmq/amqp091-go`) — клиент RabbitMQ.
-- Viper (`github.com/spf13/viper`) — конфигурации (во внутренних утилитах).
 - godotenv (`github.com/joho/godotenv`) — загрузка `.env`.
-- lib/pq (`github.com/lib/pq`) — драйвер PostgreSQL.
 
 Устанавливаются автоматически через `go mod download`.
 
