@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comments</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .stack { display: flex; flex-direction: column; gap: 8px; }
+    input[type="text"] { padding: 8px 10px; width: 360px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    .comment { padding: 8px 10px; border: 1px solid #eaeaea; border-radius: 6px; background: #fff; }
+    .children { margin-left: 20px; border-left: 2px solid #f0f0f0; padding-left: 12px; }
+    .muted { color: #666; font-size: 12px; }
+    .reply { margin-top: 6px; }
+    .heading { margin: 0 0 12px 0; }
+    .sep { height: 1px; background: #eee; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <h3 class="heading">Комментарии</h3>
+
+  <!-- Поиск -->
+  <div class="row" style="margin-bottom: 12px;">
+    <input id="searchText" type="text" placeholder="Поиск по тексту" />
+    <button id="btnSearch">Найти</button>
+  </div>
+  <div id="searchResults" class="stack"></div>
+  <div class="sep"></div>
+
+  <!-- Список комментариев -->
+  <div class="stack" style="margin-bottom: 12px;">
+    <div class="row">
+      <button id="btnLoadParents">Загрузить комментарии</button>
+      <span class="muted" id="parentsCount"></span>
+    </div>
+    <div id="commentsRoot" class="stack"></div>
+  </div>
+
+  <!-- Создание родительского комментария -->
+  <div class="row">
+    <input id="newRootText" type="text" placeholder="Новый комментарий" />
+    <button id="btnAddRoot">Ответить</button>
+  </div>
+
+  <script>
+    const api = {
+      add: async (text, parentId) => {
+        const body = { comment_text: text };
+        if (parentId) body.parent_id = parentId;
+        const res = await fetch('/comments', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('Failed to add');
+        return res.json();
+      },
+      parents: async () => {
+        const res = await fetch('/comments/parents');
+        if (!res.ok) throw new Error('Failed to load parents');
+        return res.json();
+      },
+      children: async (parentId, limit = 20, offset = 0) => {
+        const res = await fetch(`/comments/?parent_id=${encodeURIComponent(parentId)}&limit=${limit}&offset=${offset}`);
+        if (!res.ok) throw new Error('Failed to load children');
+        return res.json();
+      },
+      search: async (text) => {
+        const res = await fetch('/comments/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (!res.ok) throw new Error('Failed to search');
+        return res.json();
+      },
+      delete: async (commentId) => {
+        const res = await fetch(`/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete');
+        return res.json();
+      }
+    };
+
+    // Рендер одного комментария (с вложенными детьми по кнопке)
+    function renderCommentItem(node) {
+      const id = node.comment_id || node.CommentID;
+      const text = node.comment_text || node.CommentText;
+      const createdAt = node.created_at || node.CreatedAt;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'comment';
+
+      const head = document.createElement('div');
+      head.textContent = text || '(без текста)';
+
+      const meta = document.createElement('div');
+      meta.className = 'muted';
+      meta.textContent = `id: ${id} • ${createdAt || ''}`;
+
+      const actions = document.createElement('div');
+      actions.className = 'row';
+      const btnLoad = document.createElement('button');
+      btnLoad.textContent = 'Показать ответы';
+      const btnDelete = document.createElement('button');
+      btnDelete.textContent = 'Удалить';
+
+      const childrenWrap = document.createElement('div');
+      childrenWrap.className = 'children stack';
+
+      btnLoad.addEventListener('click', async () => {
+        childrenWrap.innerHTML = '<span class="muted">Загрузка...</span>';
+        try {
+          const { children } = await api.children(id);
+          const list = children || [];
+          if (!list.length) {
+            childrenWrap.innerHTML = '<span class="muted">Нет ответов</span>';
+          } else {
+            childrenWrap.innerHTML = '';
+            list.forEach(ch => childrenWrap.appendChild(renderCommentItem(ch)));
+          }
+        } catch (e) {
+          childrenWrap.innerHTML = `<span class="muted">Ошибка: ${e.message}</span>`;
+        }
+      });
+
+      btnDelete.addEventListener('click', async () => {
+        if (!confirm('Удалить комментарий?')) return;
+        try {
+          await api.delete(id);
+          const parentId = node.parent_id || node.ParentID;
+          if (parentId) {
+            // Обновим детей родителя
+            const { children } = await api.children(parentId);
+            const list = children || [];
+            const parentBlock = wrap.parentElement; // childrenWrap контейнер находится в том же блоке выше
+            // Найдём ближайший контейнер детей текущего уровня
+            const container = parentBlock && parentBlock.classList.contains('stack') ? parentBlock : wrap.parentElement;
+            if (container) {
+              container.innerHTML = '';
+              list.forEach(ch => container.appendChild(renderCommentItem(ch)));
+            }
+          } else {
+            // Это корневой — перезагрузим список родителей
+            await loadParents();
+          }
+        } catch (e) {
+          alert('Ошибка: ' + e.message);
+        }
+      });
+
+      const reply = document.createElement('div');
+      reply.className = 'reply row';
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.placeholder = 'Ваш ответ';
+      const btnReply = document.createElement('button');
+      btnReply.textContent = 'Ответить';
+      btnReply.addEventListener('click', async () => {
+        const val = inp.value.trim();
+        if (!val) return;
+        try {
+          await api.add(val, id);
+          inp.value = '';
+          // Обновим ответы
+          const { children } = await api.children(id);
+          const list = children || [];
+          childrenWrap.innerHTML = '';
+          if (!list.length) {
+            childrenWrap.innerHTML = '<span class="muted">Нет ответов</span>';
+          } else {
+            list.forEach(ch => childrenWrap.appendChild(renderCommentItem(ch)));
+          }
+        } catch (e) {
+          alert('Ошибка: ' + e.message);
+        }
+      });
+
+      actions.appendChild(btnLoad);
+      actions.appendChild(btnDelete);
+      reply.appendChild(inp);
+      reply.appendChild(btnReply);
+
+      wrap.appendChild(head);
+      wrap.appendChild(meta);
+      wrap.appendChild(actions);
+      wrap.appendChild(childrenWrap);
+      wrap.appendChild(reply);
+
+      return wrap;
+    }
+
+    // Рендер списка корневых комментариев
+    async function loadParents() {
+      const container = document.getElementById('commentsRoot');
+      container.innerHTML = '<span class="muted">Загрузка...</span>';
+      try {
+        const data = await api.parents();
+        const list = data.parent_comments || [];
+        document.getElementById('parentsCount').textContent = list.length ? `Всего: ${list.length}` : '';
+        container.innerHTML = '';
+        list.forEach(p => container.appendChild(renderCommentItem(p)));
+      } catch (e) {
+        container.innerHTML = `<span class="muted">Ошибка: ${e.message}</span>`;
+      }
+    }
+
+    document.getElementById('btnLoadParents').addEventListener('click', loadParents);
+
+    document.getElementById('btnAddRoot').addEventListener('click', async () => {
+      const inp = document.getElementById('newRootText');
+      const val = inp.value.trim();
+      if (!val) return;
+      try {
+        await api.add(val, null);
+        inp.value = '';
+        await loadParents();
+      } catch (e) { alert('Ошибка: ' + e.message); }
+    });
+
+    document.getElementById('btnSearch').addEventListener('click', async () => {
+      const q = document.getElementById('searchText').value.trim();
+      const box = document.getElementById('searchResults');
+      if (!q) { box.innerHTML = '<span class="muted">Пустой запрос</span>'; return; }
+      box.innerHTML = '<span class="muted">Загрузка...</span>';
+      try {
+        const data = await api.search(q);
+        const list = data.searched_comments || [];
+        if (!list.length) { box.innerHTML = '<span class="muted">Ничего не найдено</span>'; return; }
+        box.innerHTML = '';
+        list.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'comment';
+          div.textContent = (item.comment_text || item.CommentText || '(без текста)');
+          box.appendChild(div);
+        });
+      } catch (e) {
+        box.innerHTML = `<span class="muted">Ошибка: ${e.message}</span>`;
+      }
+    });
+  </script>
+</body>
+</html>
+
