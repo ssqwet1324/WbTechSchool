@@ -41,7 +41,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	log.Println("consumer started: waiting for messages from notify_queue...")
+	log.Println("kafka started: waiting for messages from notify_queue...")
 	for {
 		select {
 		case <-ctx.Done():

@@ -8,7 +8,7 @@
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
+# Test binary, built with `go test -ctx`
 *.test
 
 # Code coverage profiles and other test artifacts
