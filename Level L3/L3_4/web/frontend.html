@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processor - Загрузка и редактирование фото</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            background: #fafafa;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            box-shadow: 0 10px 20px rgba(81, 207, 102, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group input.error {
+            border-color: #ff6b6b;
+        }
+
+        .photo-id-display {
+            background: #e8f2ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+        }
+
+        .processing-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .processing-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .processing-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .size-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .size-inputs input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .size-inputs input.error {
+            border-color: #ff6b6b;
+        }
+
+        .result-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 10px 0;
+        }
+
+        .status {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .api-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .api-info h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .api-info code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .error-text {
+            font-size: 0.9rem;
+            color: #ff6b6b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ Image Processor</h1>
+            <p>Загружайте, редактируйте и управляйте вашими фотографиями</p>
+        </div>
+
+        <div class="content">
+            <!-- Секция загрузки фото -->
+            <div class="section">
+                <h2>📤 Загрузка фотографии</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <h3>Перетащите файл сюда или нажмите для выбора</h3>
+                    <p>Поддерживаются форматы: JPG, PNG, GIF</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+                <div id="uploadStatus"></div>
+                <div id="photoIdDisplay" class="photo-id-display hidden"></div>
+            </div>
+
+            <!-- Секция обработки фото -->
+            <div class="section">
+                <h2>🔧 Обработка фотографии</h2>
+                <div id="processingSection" class="hidden">
+                    <div class="processing-buttons">
+                        <!-- Resize -->
+                        <div class="processing-section">
+                            <h3>📏 Изменить размер</h3>
+                            <div class="size-inputs">
+                                <input type="number" id="resizeWidth" placeholder="Ширина" min="1" max="4000">
+                                <input type="number" id="resizeHeight" placeholder="Высота" min="1" max="4000">
+                            </div>
+                            <div class="help-text">Введите размеры больше 0 пикселей</div>
+                            <div id="resizeError" class="error-text hidden"></div>
+                            <button class="btn" onclick="processImage('resize')" id="resizeBtn">Применить Resize</button>
+                        </div>
+
+                        <!-- Miniature -->
+                        <div class="processing-section">
+                            <h3>🖼️ Миниатюра</h3>
+                            <div class="size-inputs">
+                                <input type="number" id="miniatureWidth" placeholder="Ширина" min="1" max="500">
+                                <input type="number" id="miniatureHeight" placeholder="Высота" min="1" max="500">
+                            </div>
+                            <div class="help-text">Максимальный размер: 500x500 пикселей</div>
+                            <div id="miniatureError" class="error-text hidden"></div>
+                            <button class="btn" onclick="processImage('miniature')" id="miniatureBtn">Создать миниатюру</button>
+                        </div>
+
+                        <!-- Watermark -->
+                        <div class="processing-section">
+                            <h3>🏷️ Водяной знак</h3>
+                            <p style="text-align: center; color: #666; margin-bottom: 15px;">
+                                Добавит текст "Watermark" с прозрачностью 50%
+                            </p>
+                            <div class="help-text">Автоматически конвертирует изображение для совместимости</div>
+                            <button class="btn" onclick="processImage('watermark')" id="watermarkBtn">Добавить водяной знак</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="processingStatus"></div>
+            </div>
+
+            <!-- Секция получения обработанных изображений -->
+            <div class="section">
+                <h2>👁️ Просмотр обработанных изображений</h2>
+                <div class="form-group">
+                    <label for="getPhotoId">ID фотографии:</label>
+                    <input type="text" id="getPhotoId" placeholder="Введите ID фотографии или используйте загруженное">
+                    <div class="help-text">Оставьте пустым для использования текущего загруженного фото</div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-success" onclick="getProcessedImage('resize')" id="getResizeBtn">Получить Resize</button>
+                    <button class="btn btn-success" onclick="getProcessedImage('miniature')" id="getMiniatureBtn">Получить миниатюру</button>
+                    <button class="btn btn-success" onclick="getProcessedImage('watermark')" id="getWatermarkBtn">Получить с водяным знаком</button>
+                </div>
+                <div id="getStatus"></div>
+                <div id="resultArea" class="result-area hidden">
+                    <h3>Результат:</h3>
+                    <img id="resultImage" class="result-image" alt="Обработанное изображение">
+                </div>
+            </div>
+
+            <!-- Секция удаления фото -->
+            <div class="section">
+                <h2>🗑️ Удаление фотографии</h2>
+                <div class="form-group">
+                    <label for="deletePhotoId">ID фотографии для удаления:</label>
+                    <input type="text" id="deletePhotoId" placeholder="Введите ID фотографии или используйте загруженное">
+                    <div class="help-text">Оставьте пустым для использования текущего загруженного фото</div>
+                </div>
+                <button class="btn btn-danger" onclick="deletePhoto()" id="deleteBtn">Удалить фотографию</button>
+                <div id="deleteStatus"></div>
+            </div>
+
+            <!-- Информация об API -->
+            <div class="api-info">
+                <h4>ℹ️ Информация об API</h4>
+                <p><strong>Базовый URL:</strong> <code>http://localhost:8081</code></p>
+                <p><strong>Endpoints:</strong></p>
+                <ul>
+                    <li><code>POST /upload</code> - загрузка фото</li>
+                    <li><code>POST /process</code> - обработка фото</li>
+                    <li><code>GET /image/:id/:photo_version</code> - получение обработанного фото</li>
+                    <li><code>DELETE /image/delete</code> - удаление фото</li>
+                </ul>
+                <p><strong>Исправления:</strong></p>
+                <ul>
+                    <li>✅ Улучшена обработка водяного знака с альтернативным методом</li>
+                    <li>✅ Добавлена валидация размеров для resize и miniature</li>
+                    <li>✅ Улучшена обработка ошибок и пользовательский интерфейс</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8081';
+        let currentPhotoId = null;
+
+        // Обработка drag & drop
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        // Загрузка файла
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Отладочная информация о файле
+            console.log('Загружаем файл:', {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified
+            });
+
+            showStatus('uploadStatus', 'Загрузка файла...', 'info');
+            setButtonState('upload', true);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentPhotoId = result.photo_id;
+                    console.log('Файл загружен успешно, Photo ID:', currentPhotoId);
+                    showStatus('uploadStatus', `Фото успешно загружено! ID: ${currentPhotoId}`, 'success');
+                    showPhotoId(currentPhotoId);
+                    showProcessingSection();
+                } else {
+                    console.error('Ошибка загрузки:', result.error);
+                    showStatus('uploadStatus', `Ошибка: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                showStatus('uploadStatus', `Ошибка загрузки: ${error.message}`, 'error');
+            } finally {
+                setButtonState('upload', false);
+            }
+        }
+
+        // Валидация размеров
+        function validateSizeInputs(width, height, type) {
+            const widthInput = document.getElementById(`${type}Width`);
+            const heightInput = document.getElementById(`${type}Height`);
+            const errorDiv = document.getElementById(`${type}Error`);
+            
+            // Сброс стилей ошибок
+            widthInput.classList.remove('error');
+            heightInput.classList.remove('error');
+            errorDiv.classList.add('hidden');
+
+            if (!width || !height) {
+                widthInput.classList.add('error');
+                heightInput.classList.add('error');
+                errorDiv.textContent = 'Введите ширину и высоту!';
+                errorDiv.classList.remove('hidden');
+                return false;
+            }
+
+            if (width <= 0 || height <= 0) {
+                widthInput.classList.add('error');
+                heightInput.classList.add('error');
+                errorDiv.textContent = 'Размеры должны быть больше 0!';
+                errorDiv.classList.remove('hidden');
+                return false;
+            }
+
+            if (type === 'miniature' && (width > 500 || height > 500)) {
+                widthInput.classList.add('error');
+                heightInput.classList.add('error');
+                errorDiv.textContent = 'Размер миниатюры не должен превышать 500 пикселей!';
+                errorDiv.classList.remove('hidden');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Обработка изображения
+        async function processImage(version) {
+            if (!currentPhotoId) {
+                showStatus('processingStatus', 'Сначала загрузите фото!', 'error');
+                return;
+            }
+
+            const data = {
+                photo_id: currentPhotoId,
+                version: version
+            };
+
+            // Валидация для resize и miniature
+            if (version === 'resize') {
+                const width = parseInt(document.getElementById('resizeWidth').value);
+                const height = parseInt(document.getElementById('resizeHeight').value);
+                if (!validateSizeInputs(width, height, 'resize')) {
+                    return;
+                }
+                data.width = width.toString();
+                data.height = height.toString();
+            } else if (version === 'miniature') {
+                const width = parseInt(document.getElementById('miniatureWidth').value);
+                const height = parseInt(document.getElementById('miniatureHeight').value);
+                if (!validateSizeInputs(width, height, 'miniature')) {
+                    return;
+                }
+                data.width = width.toString();
+                data.height = height.toString();
+            }
+
+            showStatus('processingStatus', `Обработка ${version}...`, 'info');
+            setButtonState(version, true);
+
+            try {
+                // Отладочная информация
+                console.log('Отправляем данные:', data);
+                console.log('Version:', version);
+                
+                // Для resize и miniature добавляем query параметры
+                let url = `${API_BASE_URL}/process`;
+                if (version === 'resize' || version === 'miniature') {
+                    url += `?widthPhoto=${data.width}&heightPhoto=${data.height}`;
+                    console.log('URL с параметрами:', url);
+                }
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    console.log('Обработка успешна:', result);
+                    showStatus('processingStatus', `Обработка ${version} запущена! ID: ${result.start_processing}`, 'success');
+                } else {
+                    console.error('Ошибка обработки:', result.error);
+                    showStatus('processingStatus', `Ошибка: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('processingStatus', `Ошибка обработки: ${error.message}`, 'error');
+            } finally {
+                setButtonState(version, false);
+            }
+        }
+
+        // Получение обработанного изображения
+        async function getProcessedImage(version) {
+            const photoId = document.getElementById('getPhotoId').value || currentPhotoId;
+            
+            if (!photoId) {
+                showStatus('getStatus', 'Введите ID фотографии!', 'error');
+                return;
+            }
+
+            showStatus('getStatus', `Получение ${version}...`, 'info');
+            setButtonState(`get${version.charAt(0).toUpperCase() + version.slice(1)}`, true);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/image/${photoId}/${version}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('getStatus', `Изображение ${version} получено!`, 'success');
+                    showResultImage(result.img_url);
+                } else {
+                    showStatus('getStatus', `Ошибка: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('getStatus', `Ошибка получения: ${error.message}`, 'error');
+            } finally {
+                setButtonState(`get${version.charAt(0).toUpperCase() + version.slice(1)}`, false);
+            }
+        }
+
+        // Удаление фотографии
+        async function deletePhoto() {
+            const photoId = document.getElementById('deletePhotoId').value || currentPhotoId;
+            
+            if (!photoId) {
+                showStatus('deleteStatus', 'Введите ID фотографии!', 'error');
+                return;
+            }
+
+            if (!confirm(`Вы уверены, что хотите удалить фото с ID: ${photoId}?`)) {
+                return;
+            }
+
+            showStatus('deleteStatus', 'Удаление фото...', 'info');
+            setButtonState('delete', true);
+
+            try {
+                const deleteData = {
+                    photo_id: photoId,
+                    version: "",
+                    width: "",
+                    height: "",
+                    bucket_name: ""
+                };
+                
+                console.log('Отправляем данные для удаления:', deleteData);
+                
+                const response = await fetch(`${API_BASE_URL}/image/delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deleteData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('deleteStatus', `Фото ${result.deleted_photo} удалено!`, 'success');
+                    if (photoId === currentPhotoId) {
+                        currentPhotoId = null;
+                        hidePhotoId();
+                        hideProcessingSection();
+                    }
+                } else {
+                    showStatus('deleteStatus', `Ошибка: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('deleteStatus', `Ошибка удаления: ${error.message}`, 'error');
+            } finally {
+                setButtonState('delete', false);
+            }
+        }
+
+        // Вспомогательные функции
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showPhotoId(photoId) {
+            const element = document.getElementById('photoIdDisplay');
+            element.textContent = `ID загруженного фото: ${photoId}`;
+            element.classList.remove('hidden');
+        }
+
+        function hidePhotoId() {
+            document.getElementById('photoIdDisplay').classList.add('hidden');
+        }
+
+        function showProcessingSection() {
+            document.getElementById('processingSection').classList.remove('hidden');
+        }
+
+        function hideProcessingSection() {
+            document.getElementById('processingSection').classList.add('hidden');
+        }
+
+        function showResultImage(url) {
+            const resultArea = document.getElementById('resultArea');
+            const resultImage = document.getElementById('resultImage');
+            
+            resultImage.src = url;
+            resultArea.classList.remove('hidden');
+        }
+
+        function setButtonState(buttonType, loading) {
+            const buttonMap = {
+                'upload': null,
+                'resize': 'resizeBtn',
+                'miniature': 'miniatureBtn',
+                'watermark': 'watermarkBtn',
+                'getResize': 'getResizeBtn',
+                'getMiniature': 'getMiniatureBtn',
+                'getWatermark': 'getWatermarkBtn',
+                'delete': 'deleteBtn'
+            };
+
+            const buttonId = buttonMap[buttonType];
+            if (buttonId) {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    button.disabled = loading;
+                    if (loading) {
+                        button.innerHTML = `<span class="loading"></span>Обработка...`;
+                    } else {
+                        button.innerHTML = button.textContent.replace(/Обработка\.\.\./, '').trim();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
