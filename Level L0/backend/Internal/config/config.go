@@ -19,7 +19,7 @@ type Config struct {
 func New() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return nil, fmt.Errorf("config UserService: error loading .env file")
+		return nil, fmt.Errorf("config UserService: error loading .env.example file")
 	}
 
 	var conf Config
