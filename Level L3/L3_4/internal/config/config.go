@@ -30,6 +30,7 @@ type ServiceConfig struct {
 	KafkaAddr           string        `env:"KAFKA_ADDR"`
 	KafkaTopic          string        `env:"KAFKA_TOPIC"`
 	KafkaGroupId        string        `env:"KAFKA_GROUP_ID"`
+	TimeOfLiveUrl       time.Duration `env:"TIME_OF_LIVE_URL"`
 }
 
 // New - конструктор конфига
@@ -46,7 +47,7 @@ func New() *ServiceConfig {
 		KafkaTopic:   getEnv("KAFKA_TOPIC", "photos_topic"),
 		KafkaGroupId: getEnv("KAFKA_GROUP_ID", "photo-consumer-group"),
 
-		// 🔹 MinIO
+		// MinIO
 		MinioEndpoint:       getEnv("MINIO_ENDPOINT", "localhost:9000"),
 		MinioAccessKey:      getEnv("MINIO_ACCESS_KEY", "minioadmin"),
 		MinioSecretKey:      getEnv("MINIO_SECRET_KEY", "minioadmin"),
@@ -55,15 +56,16 @@ func New() *ServiceConfig {
 		MinioUseSSl:         getEnvBool("MINIO_USE_SSL", false),
 	}
 
-	// 🔹 Целые числа
+	// Целые числа
 	s.DbPort = getEnvInt("DB_PORT", 5432)
 	s.MaxRetries = getEnvInt("MAX_RETRIES", 3)
 	s.MaxOpenConns = getEnvInt("MAX_OPEN_CONNS", 10)
 	s.MaxIdleConns = getEnvInt("MAX_IDLE_CONNS", 5)
 
-	// 🔹 Время
+	// Время
 	s.RetryDelay = getEnvDuration("RETRY_DELAY", 5*time.Second)
 	s.ConnMaxLifetime = getEnvDuration("CONN_MAX_LIFETIME", 30*time.Second)
+	s.ConnMaxLifetime = getEnvDuration("CONN_MAX_LIFETIME", 60*time.Hour)
 
 	zlog.Logger.Info().Msg("config loaded successfully")
 
