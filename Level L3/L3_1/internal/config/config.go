@@ -30,7 +30,7 @@ type Config struct {
 // New - конструктор
 func New() (*Config, error) {
 	var cfg Config
-	_ = godotenv.Load(".env")
+	_ = godotenv.Load(".env.example")
 
 	cfg.DbName = os.Getenv("DB_NAME")
 	cfg.DbUser = os.Getenv("DB_USER")

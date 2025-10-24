@@ -414,25 +414,6 @@
                 <button class="btn btn-danger" onclick="deletePhoto()" id="deleteBtn">Удалить фотографию</button>
                 <div id="deleteStatus"></div>
             </div>
-
-            <!-- Информация об API -->
-            <div class="api-info">
-                <h4>ℹ️ Информация об API</h4>
-                <p><strong>Базовый URL:</strong> <code>http://localhost:8081</code></p>
-                <p><strong>Endpoints:</strong></p>
-                <ul>
-                    <li><code>POST /upload</code> - загрузка фото</li>
-                    <li><code>POST /process</code> - обработка фото</li>
-                    <li><code>GET /image/:id/:photo_version</code> - получение обработанного фото</li>
-                    <li><code>DELETE /image/delete</code> - удаление фото</li>
-                </ul>
-                <p><strong>Исправления:</strong></p>
-                <ul>
-                    <li>✅ Улучшена обработка водяного знака с альтернативным методом</li>
-                    <li>✅ Добавлена валидация размеров для resize и miniature</li>
-                    <li>✅ Улучшена обработка ошибок и пользовательский интерфейс</li>
-                </ul>
-            </div>
         </div>
     </div>
 

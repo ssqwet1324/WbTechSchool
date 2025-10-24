@@ -7,6 +7,7 @@ import (
 	"image_processor/internal/usecase"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wb-go/wbf/ginext"
@@ -28,6 +29,7 @@ func New(uc *usecase.UseCase, pr *kafka.Queue) *ImgHandler {
 
 // UploadImage - ручка загрузки фото
 func (h *ImgHandler) UploadImage(ctx *ginext.Context) {
+	// получаем изображение
 	img, header, err := ctx.Request.FormFile("image")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read file"})
@@ -45,11 +47,14 @@ func (h *ImgHandler) UploadImage(ctx *ginext.Context) {
 	imgSize := header.Size
 
 	loadPhoto := entity.LoadPhoto{
-		Name:   imgName,
-		Size:   imgSize,
-		Reader: img,
+		Name:      imgName,
+		Size:      imgSize,
+		Reader:    img,
+		Status:    "loading",
+		CreatedAt: time.Now(),
 	}
 
+	// добавляем фото
 	photoID, err := h.uc.AddPhoto(ctx, loadPhoto)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add photo"})
@@ -116,6 +121,7 @@ func (h *ImgHandler) GetProcessedImg(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"img_url": imgUrl})
 }
 
+// DeletePhoto - ручка удаления фотографии
 func (h *ImgHandler) DeletePhoto(ctx *gin.Context) {
 	var req entity.PhotoInfo
 

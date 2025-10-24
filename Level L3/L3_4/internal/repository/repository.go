@@ -32,6 +32,7 @@ func New(masterDSN string, options *dbpg.Options, cfg *config.ServiceConfig) *Re
 	masterDB.SetMaxIdleConns(options.MaxIdleConns)
 	masterDB.SetConnMaxLifetime(options.ConnMaxLifetime)
 
+	// подключение к minio
 	minioClient, err := minio.New(cfg.MinioEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.MinioAccessKey, cfg.MinioSecretKey, ""),
 		Secure: cfg.MinioUseSSl,
@@ -64,6 +65,7 @@ func (repo *Repository) AddPhotoInfo(ctx context.Context, photo entity.LoadPhoto
 	return nil
 }
 
+// ChangeStatus - изменяем статус фото, если оно успешно загрузилось в minio
 func (repo *Repository) ChangeStatus(ctx context.Context, photoID, status string) error {
 	query := `Update photos set status = $1 where id = $2`
 
@@ -76,6 +78,7 @@ func (repo *Repository) ChangeStatus(ctx context.Context, photoID, status string
 	return nil
 }
 
+// DeletePhoto - удаляем оригинальный id фото из бд
 func (repo *Repository) DeletePhoto(ctx context.Context, photoID string) error {
 	query := `DELETE FROM photos WHERE id = $1`
 	_, err := repo.DB.ExecContext(ctx, query, photoID)

@@ -24,6 +24,7 @@ type PhotoInfo struct {
 	Height     string `json:"height"`
 }
 
+// MinIOObject - объект для формирования url
 type MinIOObject struct {
 	Scheme string `json:"scheme"`
 	Host   string `json:"host"`

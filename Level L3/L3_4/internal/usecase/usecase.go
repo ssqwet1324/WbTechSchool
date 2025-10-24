@@ -35,6 +35,7 @@ func New(repo RepositoryProvider, cfg *config.ServiceConfig) *UseCase {
 	return &UseCase{repo: repo, cfg: cfg}
 }
 
+// generateIDPhoto - генерация id для фото
 func generateIDPhoto() string {
 	return uuid.New().String()
 }
@@ -53,9 +54,14 @@ func (uc *UseCase) AddPhoto(ctx context.Context, photo entity.LoadPhoto) (string
 	// загружаем оригинальное фото в MinIO
 	if err := uc.repo.UploadPhoto(ctx, uc.cfg.BucketName, photo); err != nil {
 		zlog.Logger.Error().Err(err).Msg("AddPhoto: failed uploading photo")
+		if err := uc.repo.DeletePhoto(ctx, photoID); err != nil {
+			zlog.Logger.Error().Err(err).Msg("AddPhoto: failed deleting photo from db")
+			return "", err
+		}
 		return "", err
 	}
 
+	photo.Status = "loaded"
 	// обновляем статус
 	if err := uc.repo.ChangeStatus(ctx, photo.ID, photo.Status); err != nil {
 		zlog.Logger.Error().Err(err).Msg("AddPhoto: failed updating status photo")
@@ -73,6 +79,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 	var width, height int
 	var err error
 
+	// проверяем что ширина не пустая
 	if photo.Width != "" {
 		width, err = strconv.Atoi(photo.Width)
 		if err != nil {
@@ -81,6 +88,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 		}
 	}
 
+	// проверяем что высота не пустая
 	if photo.Height != "" {
 		height, err = strconv.Atoi(photo.Height)
 		if err != nil {
@@ -96,6 +104,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 		return "", err
 	}
 
+	// создаем объект для bimg
 	var processedImage []byte
 	img := bimg.NewImage(data)
 
@@ -126,6 +135,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 			},
 		}
 
+		// итоговое изображение
 		processedImage, err = img.Process(options)
 		if err != nil {
 			zlog.Logger.Error().Err(err).Msg("PhotoProcessing: failed to watermark")
@@ -133,6 +143,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 		}
 
 	default:
+		// если ввели неподдерживаемый формат редактирования
 		zlog.Logger.Error().Msg("PhotoProcessing: unsupported photo version")
 		return "", err
 	}
@@ -158,7 +169,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 func (uc *UseCase) GetProcessedImg(ctx context.Context, info entity.PhotoInfo) (string, error) {
 	info.BucketName = uc.cfg.BucketName
 	imgProcessedUrl, err := uc.repo.GetPhotoUrlByVersion(ctx, info.BucketName, info.PhotoID, info.Version)
-	if err != nil {
+	if err != nil || imgProcessedUrl == "" {
 		zlog.Logger.Error().Err(err).Msg("GetProcessedImg: failed to get processed url")
 		return "", err
 	}

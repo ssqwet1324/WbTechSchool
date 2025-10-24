@@ -10,12 +10,14 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Queue - очередь
 type Queue struct {
 	consumer *kafka.Consumer
 	producer *kafka.Producer
 	uc       *usecase.UseCase
 }
 
+// New - конструктор для очереди
 func New(c *kafka.Consumer, pr *kafka.Producer, uc *usecase.UseCase) *Queue {
 	return &Queue{
 		consumer: c,
@@ -34,6 +36,7 @@ func (q *Queue) StartConsumer(ctx context.Context) {
 			break
 		}
 
+		// создаем нужный объект для kafka
 		var photo entity.PhotoInfo
 		if err := json.Unmarshal(msg.Value, &photo); err != nil {
 			zlog.Logger.Error().Err(err).Msg("StartConsumer: failed unmarshalling")
