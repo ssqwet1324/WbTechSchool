@@ -15,6 +15,7 @@ type RepositoryProvider interface {
 	CheckFreeSeats(ctx context.Context, eventID string, seatNumber int) (string, error)
 	MarkSeatAsReserving(ctx context.Context, eventID string, seatNumber int, userID string) error
 	ConfirmSeatBooking(ctx context.Context, eventID string, seatNumber int, userID string) error
+	//CleanupExpiredReservations(ctx context.Context, redisExist bool) error
 	CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int, redisExist bool) error
 	GetEventInfo(ctx context.Context, eventID string) (*entity.EventInfo, error)
 	GetAllEvents(ctx context.Context) ([]entity.CreateEvent, error)
@@ -150,10 +151,31 @@ func (uc *UseCase) GetEvent(ctx context.Context, eventID string) (*entity.EventI
 	return uc.repo.GetEventInfo(ctx, eventID)
 }
 
-// GetAllEvents - получаем все мероприятия
 func (uc *UseCase) GetAllEvents(ctx context.Context) ([]entity.CreateEvent, error) {
 	return uc.repo.GetAllEvents(ctx)
 }
+
+// CleanupExpiredReservations - очистка просроченных броней
+//func (uc *UseCase) CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int) error {
+//	key := generateRedisKey(eventID, seatNumber)
+//
+//	zlog.Logger.Info().Str("key", key).Msg("KEY для очистки")
+//
+//	// проверяем такой ключ в редис
+//	existKey, err := uc.repo.CheckKeyInRedis(ctx, key)
+//	if err != nil {
+//		return fmt.Errorf("error get exist key: %w", err)
+//	}
+//
+//	err = uc.repo.CleanupExpiredReservations(ctx, existKey)
+//	if err != nil {
+//		zlog.Logger.Error().Err(err).Msg("failed to cleanup expired reservation lock")
+//
+//		return fmt.Errorf("error clean expired reservation: %w", err)
+//	}
+//
+//	return nil
+//}
 
 func (uc *UseCase) CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int) error {
 	key := generateRedisKey(eventID, seatNumber)
@@ -166,13 +188,21 @@ func (uc *UseCase) CleanupExpiredReservations(ctx context.Context, eventID strin
 
 	// если ключ есть — просто выходим (бронь ещё активна)
 	if existKey {
+		zlog.Logger.Info().
+			Str("event_id", eventID).
+			Int("seat_number", seatNumber).
+			Msg("Ключ найден в Redis — место остаётся забронированным")
 		return nil
 	}
 
 	// если ключа нет — очищаем конкретное место
 	err = uc.repo.CleanupExpiredReservations(ctx, eventID, seatNumber, existKey)
 	if err != nil {
-		zlog.Logger.Error().Err(err).Str("event_id", eventID).Int("seat_number", seatNumber).Msg("Ошибка очистки просроченного места")
+		zlog.Logger.Error().
+			Err(err).
+			Str("event_id", eventID).
+			Int("seat_number", seatNumber).
+			Msg("Ошибка очистки просроченного места")
 
 		return fmt.Errorf("ошибка очистки просроченного места: %w", err)
 	}

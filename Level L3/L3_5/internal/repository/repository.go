@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"event_booker/internal/config"
 	"event_booker/internal/entity"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,14 +19,13 @@ type Repository struct {
 	DB     *dbpg.DB
 	master *dbpg.Options
 	Client *redis.Client
-	cfg    *config.ServiceConfig
 }
 
 // New - конструктор репозитория
-func New(masterDSN string, options *dbpg.Options, client *redis.Client, cfg *config.ServiceConfig) *Repository {
+func New(masterDSN string, options *dbpg.Options, client *redis.Client) *Repository {
 	masterDB, err := sql.Open("postgres", masterDSN)
 	if err != nil {
-		zlog.Logger.Fatal().Msgf("failed to open master DB: %v", err)
+		log.Fatalf("failed to open master DB: %v", err)
 	}
 
 	masterDB.SetMaxOpenConns(options.MaxOpenConns)
@@ -38,7 +37,6 @@ func New(masterDSN string, options *dbpg.Options, client *redis.Client, cfg *con
 		DB:     db,
 		master: options,
 		Client: client,
-		cfg:    cfg,
 	}
 }
 
@@ -102,7 +100,9 @@ func (repo *Repository) CheckFreeSeats(ctx context.Context, eventID string, seat
 
 // MarkSeatAsReserving - помечаем место в бд как зарезервированное
 func (repo *Repository) MarkSeatAsReserving(ctx context.Context, eventID string, seatNumber int, userID string) error {
-	query := `UPDATE seats SET status='reserving', user_id=$1 WHERE event_id=$2 AND seat_number=$3 AND status='free' `
+	query := `UPDATE seats SET status='reserving', user_id=$1 WHERE event_id=$2 AND seat_number=$3 
+    AND status='free'
+    `
 
 	// помечаем место как потенциально зарезервированное
 	res, err := repo.DB.ExecContext(ctx, query, userID, eventID, seatNumber)
@@ -181,7 +181,11 @@ func (repo *Repository) GetEventInfo(ctx context.Context, eventID string) (*enti
 
 // GetAllEvents — получить все мероприятия из БД
 func (repo *Repository) GetAllEvents(ctx context.Context) ([]entity.CreateEvent, error) {
-	query := `SELECT id, title, date, total_seats FROM events ORDER BY date ASC;`
+	query := `
+        SELECT id, title, date, total_seats
+        FROM events
+        ORDER BY date ASC;
+    `
 
 	rows, err := repo.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -205,8 +209,47 @@ func (repo *Repository) GetAllEvents(ctx context.Context) ([]entity.CreateEvent,
 	return events, nil
 }
 
+// CleanupExpiredReservations — очищает просроченные бронирования
+//func (repo *Repository) CleanupExpiredReservations(ctx context.Context, redisExist bool) error {
+//	// Получаем все места в статусе reserving
+//	query := `SELECT id, event_id, seat_number FROM seats WHERE status='reserving'`
+//	rows, err := repo.DB.QueryContext(ctx, query)
+//	if err != nil {
+//		return err
+//	}
+//	defer rows.Close()
+//
+//	var toFree []string
+//
+//	for rows.Next() {
+//		var id, eventID string
+//		var seatNumber int
+//		rows.Scan(&id, &eventID, &seatNumber)
+//
+//		// если в redis нет ключа
+//		if !redisExist {
+//			// блокировка отсутствует
+//			toFree = append(toFree, id)
+//		}
+//	}
+//
+//	// Освобождаем места
+//	query = `UPDATE seats SET status='free', user_id='' WHERE id=$1`
+//	if len(toFree) > 0 {
+//		for _, id := range toFree {
+//			_, err := repo.DB.ExecContext(ctx, query, id)
+//			if err != nil {
+//				zlog.Logger.Error().Err(err).Str("seat_id", id).Msg("failed to free seat")
+//			}
+//		}
+//		zlog.Logger.Info().Msgf("Freed %d expired seats", len(toFree))
+//	}
+//
+//	return nil
+//}
+
 func (repo *Repository) CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int, redisExist bool) error {
-	// если ключ есть в redis пропускаем
+	// если ключ есть — ничего не делаем
 	if redisExist {
 		return nil
 	}
@@ -215,11 +258,17 @@ func (repo *Repository) CleanupExpiredReservations(ctx context.Context, eventID 
 	query := `UPDATE seats SET status='free', user_id='' WHERE event_id=$1 AND seat_number=$2 AND status='reserving'`
 	_, err := repo.DB.ExecContext(ctx, query, eventID, seatNumber)
 	if err != nil {
-		zlog.Logger.Error().Err(err).Str("event_id", eventID).Int("seat_number", seatNumber).Msg("failed to free expired seat")
+		zlog.Logger.Error().Err(err).
+			Str("event_id", eventID).
+			Int("seat_number", seatNumber).
+			Msg("failed to free expired seat")
 		return err
 	}
 
-	zlog.Logger.Info().Str("event_id", eventID).Int("seat_number", seatNumber).Msg("Freed expired seat")
+	zlog.Logger.Info().
+		Str("event_id", eventID).
+		Int("seat_number", seatNumber).
+		Msg("Freed expired seat")
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"event_booker/internal/entity"
+	"time"
 
 	"github.com/wb-go/wbf/zlog"
 )
@@ -12,7 +13,7 @@ import (
 // Возвращаем (успех bool, ошибка error)
 func (repo *Repository) AddReserveSeat(ctx context.Context, key string, seat entity.Seat) (bool, error) {
 	//TODO В конфиг
-	ok, err := repo.Client.SetNX(ctx, key, seat.UserID, repo.cfg.BookRedisTTL).Result()
+	ok, err := repo.Client.SetNX(ctx, key, seat.UserID, 10*time.Minute).Result()
 	if err != nil {
 		zlog.Logger.Error().Err(err).Msg("redis add reserve seat error")
 		return false, err

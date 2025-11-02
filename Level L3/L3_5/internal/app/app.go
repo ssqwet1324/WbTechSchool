@@ -4,12 +4,12 @@ import (
 	"context"
 	"event_booker/internal/config"
 	"event_booker/internal/handler"
-	"event_booker/internal/middleware"
 	"event_booker/internal/repository"
 	"event_booker/internal/scheduler"
 	"event_booker/internal/usecase"
 	"event_booker/migrations"
 	"fmt"
+	"log"
 
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/ginext"
@@ -20,15 +20,22 @@ import (
 func Run() {
 	server := ginext.New("release")
 
-	server.Use(middleware.ServerMiddleware())
-
 	// Logger
 	zlog.InitConsole()
 
 	serviceCfg := config.New()
 	if serviceCfg == nil {
 		zlog.Logger.Fatal().Msg("Failed to load config")
+		return
 	}
+
+	// Логируем конфигурацию для отладки
+	zlog.Logger.Info().
+		Str("db_host", serviceCfg.DbHost).
+		Int("db_port", serviceCfg.DbPort).
+		Str("db_name", serviceCfg.DbName).
+		Str("db_user", serviceCfg.DbUser).
+		Msg("Loaded configuration")
 
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
@@ -49,7 +56,6 @@ func Run() {
 		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
 	},
 		redisClient,
-		serviceCfg,
 	)
 
 	shortenerMigrations := migrations.New(repo, serviceCfg)
@@ -72,11 +78,11 @@ func Run() {
 	server.POST("/events/:id/confirm", eventHandler.Confirm)
 	server.GET("/events/:id", eventHandler.GetEvent)
 
-	// файлы для фронта
+	// Статические файлы для фронтенда
 	server.Engine.Static("/web", "./web")
 	server.Engine.StaticFile("/", "./web/index.html")
 
 	if err := server.Run(":8081"); err != nil {
-		zlog.Logger.Fatal().Err(err).Msg("Error starting server")
+		log.Fatal(err)
 	}
 }
