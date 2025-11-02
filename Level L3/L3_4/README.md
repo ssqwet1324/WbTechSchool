@@ -148,6 +148,14 @@ cp .env.example .env
 ```bash
 go run cmd/image_processor/main.go
 ```
+Сделать бакет открытым(при желании)
+```bash
+./mc anonymous set download localminio/photos
+```
+Создать топик для кафки:
+```bash
+docker exec kafka kafka-console-producer --bootstrap-server localhost:9092 --topic photos_topic
+```
 
 ## ⚙️ Конфигурация
 
