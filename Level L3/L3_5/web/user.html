@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователь - Система бронирования</title>
+    <link rel="stylesheet" href="/web/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Назад на главную</a>
+        <h1>Бронирование мероприятий</h1>
+
+        <!-- Вход пользователя -->
+        <div class="section">
+            <h2>Вход</h2>
+            <div class="form-group">
+                <label for="userId">Ваш ID пользователя:</label>
+                <input type="text" id="userId" placeholder="user-001" required>
+                <button onclick="setUser()" class="btn btn-primary" style="margin-top: 10px;">Войти</button>
+            </div>
+            <div id="userInfo" style="display: none; margin-top: 15px; padding: 10px; background: #d1ecf1; border-radius: 5px;">
+                <strong>Вы вошли как: <span id="currentUser"></span></strong>
+            </div>
+        </div>
+
+        <!-- Список мероприятий -->
+        <div class="section" id="eventsSection" style="display: none;">
+            <h2>Доступные мероприятия</h2>
+            <button onclick="loadEvents()" class="btn btn-primary">Обновить список</button>
+            <div id="eventsList" class="events-list">
+                <div class="loading">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Детали мероприятия и места -->
+        <div class="section" id="eventDetailsSection" style="display: none;">
+            <h2 id="eventDetailsTitle">Детали мероприятия</h2>
+            <div id="eventDetails"></div>
+            <div id="seatsContainer"></div>
+            <div id="reservationInfo" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 5px;">
+                <h3>Ваша бронь:</h3>
+                <p><strong>Место:</strong> <span id="reservedSeat"></span></p>
+                <p><strong>Статус:</strong> <span id="reservationStatus"></span></p>
+                <div id="reservationTimer" class="reservation-timer"></div>
+                <button onclick="confirmReservation()" class="btn btn-success" style="margin-top: 10px;">Подтвердить оплату</button>
+            </div>
+        </div>
+
+        <!-- Сообщения -->
+        <div id="messageArea"></div>
+    </div>
+
+    <script src="/web/user.js"></script>
+</body>
+</html>
+
