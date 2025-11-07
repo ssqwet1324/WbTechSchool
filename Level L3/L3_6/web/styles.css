@@ -1,0 +1,246 @@
+:root {
+    --bg: #f5f7fb;
+    --card-bg: #ffffff;
+    --border: #d8dbe8;
+    --primary: #3a6ff7;
+    --primary-dark: #2c54be;
+    --secondary: #eef2ff;
+    --text: #1f2a44;
+    --muted: #6c7892;
+    --success: #1b9c5a;
+    --error: #d64545;
+    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.page-header,
+.page-footer {
+    padding: 2rem 3vw;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.page-footer {
+    border-bottom: none;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--muted);
+}
+
+.layout {
+    display: grid;
+    gap: 1.5rem;
+    padding: 2rem 3vw 4rem;
+}
+
+@media (min-width: 1080px) {
+    .layout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: minmax(0, 1fr);
+    }
+
+    .layout > .card:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 18px;
+    padding: 1.75rem;
+    box-shadow: 0 20px 50px -35px rgba(31, 42, 68, 0.4);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.card-header {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+input,
+button {
+    font: inherit;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"] {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #f9fbff;
+    color: var(--text);
+}
+
+button {
+    cursor: pointer;
+    border-radius: 10px;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+}
+
+.primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.primary:hover {
+    background: var(--primary-dark);
+}
+
+.secondary {
+    background: var(--secondary);
+    color: var(--primary-dark);
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-grid h3 {
+    margin: 0;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+thead {
+    background: #eef2ff;
+    color: var(--muted);
+}
+
+th,
+td {
+    padding: 0.75rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+td.text-right,
+th.text-right {
+    text-align: right;
+}
+
+th.actions,
+td.actions {
+    width: 130px;
+}
+
+tbody tr:hover {
+    background: rgba(58, 111, 247, 0.06);
+}
+
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-group button {
+    padding: 0.4rem 0.6rem;
+}
+
+.message {
+    min-height: 1.2rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+}
+
+.message.error {
+    color: var(--error);
+}
+
+.message.success {
+    color: var(--success);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+}
+
+.metric {
+    background: #f4f7ff;
+    border-radius: 14px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.metric-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.chart-wrapper {
+    background: #f9fbff;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+code {
+    background: #eef2ff;
+    padding: 0.1rem 0.35rem;
+    border-radius: 6px;
+}
+

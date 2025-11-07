@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансовый трекер</title>
+    <link rel="stylesheet" href="/web/styles.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script defer src="/web/app.js"></script>
+</head>
+
+<body>
+    <header class="page-header">
+        <h1>Финансовый трекер</h1>
+        <p>Добавляйте операции, фильтруйте их и получайте аналитику в пару кликов.</p>
+    </header>
+
+    <main class="layout">
+        <section class="card">
+            <h2>Новая операция</h2>
+            <form id="create-form" class="form-grid">
+                <label>
+                    Название
+                    <input type="text" name="title" placeholder="Например, зарплата" required>
+                </label>
+                <label>
+                    Категория
+                    <input type="text" name="category" placeholder="Доход / Расход" required>
+                </label>
+                <label>
+                    Сумма
+                    <input type="number" name="amount" step="0.01" min="0" required>
+                </label>
+                <label>
+                    Дата
+                    <input type="datetime-local" name="date" required>
+                </label>
+                <button type="submit" class="primary">Добавить</button>
+            </form>
+            <p id="create-message" class="message" role="status"></p>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Записи</h2>
+                <div class="filters">
+                    <label>
+                        От
+                        <input type="date" id="filter-from">
+                    </label>
+                    <label>
+                        До
+                        <input type="date" id="filter-to">
+                    </label>
+                    <button type="button" id="items-refresh" class="secondary">Обновить</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="items-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th class="text-right">Сумма</th>
+                            <th>Дата</th>
+                            <th class="actions">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <p id="items-message" class="message" role="status"></p>
+
+            <form id="update-form" class="form-grid hidden">
+                <h3>Редактирование</h3>
+                <input type="hidden" name="id">
+                <label>
+                    Название
+                    <input type="text" name="title" required>
+                </label>
+                <label>
+                    Категория
+                    <input type="text" name="category" required>
+                </label>
+                <label>
+                    Сумма
+                    <input type="number" name="amount" step="0.01" min="0" required>
+                </label>
+                <label>
+                    Дата
+                    <input type="datetime-local" name="date" required>
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="primary">Сохранить</button>
+                    <button type="button" id="update-cancel" class="secondary">Отмена</button>
+                </div>
+                <p id="update-message" class="message" role="status"></p>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Аналитика</h2>
+                <div class="filters">
+                    <label>
+                        От
+                        <input type="date" id="analytics-from">
+                    </label>
+                    <label>
+                        До
+                        <input type="date" id="analytics-to">
+                    </label>
+                    <label>
+                        Категория
+                        <input type="text" id="analytics-category" placeholder="необязательно">
+                    </label>
+                    <button type="button" id="analytics-refresh" class="secondary">Показать</button>
+                </div>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="metric">
+                    <span class="metric-label">Количество</span>
+                    <span id="metric-count" class="metric-value">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Сумма</span>
+                    <span id="metric-sum" class="metric-value">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Среднее</span>
+                    <span id="metric-avg" class="metric-value">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Медиана</span>
+                    <span id="metric-median" class="metric-value">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">90-й перцентиль</span>
+                    <span id="metric-p90" class="metric-value">—</span>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="analytics-chart" height="160"></canvas>
+            </div>
+            <p id="analytics-message" class="message" role="status"></p>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <small>Сервис работает с REST API на <code>http://localhost:8081</code>.</small>
+    </footer>
+</body>
+
+</html>
+
