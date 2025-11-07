@@ -134,6 +134,54 @@ func (h *Handler) GetAnalytics(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"analytics": data})
 }
 
+func (h *Handler) SaveAnalyticsToCSV(ctx *gin.Context) {
+	fromStr := ctx.Query("from")
+	toStr := ctx.Query("to")
+	category := ctx.Query("category")
+	filename := ctx.Query("filename")
+
+	var categoryPtr *string
+	if category != "" {
+		categoryPtr = &category
+	}
+
+	if filename != "" {
+		filename = "analytics.csv"
+	}
+
+	// Парсим даты
+	fromDate, toDate, err := parseDate(fromStr, toStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	analytics := entity.GetItemsFromAnalytics{
+		FromDate: fromDate,
+		ToDate:   toDate,
+		Category: categoryPtr,
+	}
+
+	// Получаем аналитику
+	data, err := h.uc.GetAnalytics(ctx, analytics)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Сохраняем CSV
+	err = h.uc.SaveAnalyticsToCSV(filename, *data)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save CSV: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message":  "CSV saved successfully",
+		"filename": filename,
+	})
+}
+
 // parseDate парсит даты в форматах "YYYY-MM-DD" и RFC3339.
 func parseDate(from, to string) (*time.Time, *time.Time, error) {
 	var (

@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"sales_tracker/internal/analytics"
 	"sales_tracker/internal/entity"
 	"time"
 
@@ -107,4 +108,15 @@ func (uc *UseCase) GetAnalytics(ctx context.Context, analytics entity.GetItemsFr
 	}
 
 	return data, nil
+}
+
+// SaveAnalyticsToCSV - получаем аналитику по заданному периоду и сохраняем в csv файл
+func (uc *UseCase) SaveAnalyticsToCSV(filename string, result entity.AnalyticsResult) error {
+	// сохраняем данные в CSV через отдельную функцию
+	err := analytics.SaveAnalyticsToCSV(filename, result)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

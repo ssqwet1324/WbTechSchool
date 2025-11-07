@@ -12,6 +12,7 @@ const selectors = {
     updateMessage: document.getElementById("update-message"),
     updateCancel: document.getElementById("update-cancel"),
     analyticsRefresh: document.getElementById("analytics-refresh"),
+    analyticsExportCsv: document.getElementById("analytics-export-csv"),
     analyticsMessage: document.getElementById("analytics-message"),
     analyticsFrom: document.getElementById("analytics-from"),
     analyticsTo: document.getElementById("analytics-to"),
@@ -349,6 +350,98 @@ async function fetchAnalytics() {
     }
 }
 
+function generateFilename() {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, "");
+    return `analytics_${dateStr}_${timeStr}.csv`;
+}
+
+function generateCSVContent(data) {
+    const headers = ["TotalCount", "TotalSum", "AvgAmount", "Median", "P90"];
+    const values = [
+        String(data.totalCount ?? data.TotalCount ?? 0),
+        String(data.totalSum ?? data.TotalSum ?? 0),
+        String(data.avgAmount ?? data.AvgAmount ?? 0),
+        String(data.median ?? data.Median ?? 0),
+        String(data.p90 ?? data.P90 ?? 0),
+    ];
+    
+    const csvRows = [headers.join(","), values.join(",")];
+    return csvRows.join("\n");
+}
+
+function downloadCSV(content, filename) {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+}
+
+async function exportAnalyticsToCSV() {
+    const params = buildRangeSearchParams(
+        selectors.analyticsFrom.value,
+        selectors.analyticsTo.value,
+        { fallback: true }
+    );
+    if (selectors.analyticsCategory.value.trim()) {
+        params.set("category", selectors.analyticsCategory.value.trim());
+    }
+
+    const filename = generateFilename();
+    params.set("filename", filename);
+
+    const url = `/analytics/csv?${params.toString()}`;
+
+    setMessage(selectors.analyticsMessage, "Экспортируем в CSV...");
+    try {
+        // Сначала получаем аналитику для генерации CSV
+        const analyticsParams = buildRangeSearchParams(
+            selectors.analyticsFrom.value,
+            selectors.analyticsTo.value,
+            { fallback: true }
+        );
+        if (selectors.analyticsCategory.value.trim()) {
+            analyticsParams.set("category", selectors.analyticsCategory.value.trim());
+        }
+        const analyticsUrl = `/analytics?${analyticsParams.toString()}`;
+        
+        const analyticsResponse = await request(analyticsUrl, { method: "GET" });
+        const analytics = analyticsResponse?.analytics ?? null;
+        
+        if (!analytics) {
+            throw new Error("Не удалось получить данные аналитики");
+        }
+
+        // Генерируем CSV на клиенте
+        const csvContent = generateCSVContent(analytics);
+        
+        // Скачиваем файл
+        downloadCSV(csvContent, filename);
+
+        // Сохраняем на сервере (опционально)
+        try {
+            await request(url, { method: "POST" });
+        } catch (saveError) {
+            // Игнорируем ошибку сохранения на сервере, файл уже скачан
+            console.warn("Не удалось сохранить файл на сервере:", saveError);
+        }
+
+        setMessage(
+            selectors.analyticsMessage,
+            `CSV файл успешно скачан: ${filename}`,
+            "success"
+        );
+    } catch (error) {
+        setMessage(selectors.analyticsMessage, error.message, "error");
+    }
+}
+
 function updateAnalyticsView(data) {
     if (!data) {
         selectors.metricCount.textContent = "—";
@@ -453,6 +546,7 @@ function initEventListeners() {
     selectors.updateForm?.addEventListener("submit", handleUpdateSubmit);
     selectors.updateCancel?.addEventListener("click", handleCancelUpdate);
     selectors.analyticsRefresh?.addEventListener("click", fetchAnalytics);
+    selectors.analyticsExportCsv?.addEventListener("click", exportAnalyticsToCSV);
 }
 
 async function bootstrap() {

@@ -59,6 +59,7 @@ func Run() {
 	server.PUT("/items/:id", itemsHandler.UpdateItem)
 	server.DELETE("/items/:id", itemsHandler.DeleteItem)
 	server.GET("/analytics", itemsHandler.GetAnalytics)
+	server.POST("/analytics/csv", itemsHandler.SaveAnalyticsToCSV)
 
 	// Статические файлы для фронтенда
 	server.Engine.Static("/web", "./web")
