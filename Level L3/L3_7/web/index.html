@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система управления складом</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Панель входа/регистрации -->
+        <div id="authPanel" class="panel">
+            <div class="auth-tabs">
+                <button class="tab-btn active" onclick="showLoginTab()">Вход</button>
+                <button class="tab-btn" onclick="showRegisterTab()">Регистрация</button>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="loginForm" class="auth-form">
+                <h1>Вход в систему</h1>
+                <div class="form-group">
+                    <label for="username">Имя пользователя:</label>
+                    <input type="text" id="username" placeholder="Введите имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Роль:</label>
+                    <select id="userRole">
+                        <option value="viewer">Viewer (только просмотр)</option>
+                        <option value="manager">Manager (просмотр и редактирование)</option>
+                        <option value="admin">Admin (полный доступ)</option>
+                    </select>
+                </div>
+                <button onclick="login()" class="btn btn-primary">Войти</button>
+                <div id="loginError" class="error-message"></div>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <h1>Регистрация нового пользователя</h1>
+                <div class="form-group">
+                    <label for="regUsername">Имя пользователя:</label>
+                    <input type="text" id="regUsername" placeholder="Введите имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label for="regRole">Роль:</label>
+                    <select id="regRole">
+                        <option value="viewer">Viewer (только просмотр)</option>
+                        <option value="manager">Manager (просмотр и редактирование)</option>
+                        <option value="admin">Admin (полный доступ)</option>
+                    </select>
+                </div>
+                <button onclick="register()" class="btn btn-success">Зарегистрироваться</button>
+                <div id="registerError" class="error-message"></div>
+                <div id="registerSuccess" class="success-message"></div>
+            </div>
+        </div>
+
+        <!-- Основной интерфейс -->
+        <div id="mainPanel" class="panel" style="display: none;">
+            <div class="header">
+                <h1>Система управления складом</h1>
+                <div class="user-info">
+                    <span>Пользователь: <strong id="currentUser"></strong></span>
+                    <span>Роль: <strong id="currentRole"></strong></span>
+                    <button onclick="logout()" class="btn btn-secondary">Выйти</button>
+                </div>
+            </div>
+
+            <!-- Поиск товара -->
+            <div class="search-section">
+                <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label for="searchProductName">Поиск товара по названию:</label>
+                        <input type="text" id="searchProductName" placeholder="Введите название товара">
+                    </div>
+                    <button onclick="searchProduct()" class="btn btn-primary">Найти</button>
+                </div>
+                <div id="searchResult" style="display: none; margin-top: 15px;"></div>
+            </div>
+
+            <!-- Кнопка добавления товара (только для admin) -->
+            <div id="addProductSection" style="display: none; margin-top: 20px;">
+                <button onclick="showAddProductForm()" class="btn btn-success">+ Добавить товар</button>
+            </div>
+
+            <!-- Форма добавления/редактирования товара -->
+            <div id="productForm" class="form-panel" style="display: none;">
+                <h2 id="formTitle">Добавить товар</h2>
+                <div class="form-group">
+                    <label for="productName">Название:</label>
+                    <input type="text" id="productName" required>
+                </div>
+                <div class="form-group">
+                    <label for="productDescription">Описание:</label>
+                    <textarea id="productDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="productQuantity">Количество:</label>
+                    <input type="number" id="productQuantity" min="0" required>
+                </div>
+                <div class="form-actions">
+                    <button onclick="saveProduct()" class="btn btn-primary">Сохранить</button>
+                    <button onclick="cancelProductForm()" class="btn btn-secondary">Отмена</button>
+                </div>
+            </div>
+
+            <!-- Таблица товаров -->
+            <div class="products-section">
+                <h2>Список товаров</h2>
+                <button onclick="loadProducts()" class="btn btn-refresh">🔄 Обновить</button>
+                <div id="productsTableContainer">
+                    <table id="productsTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>Описание</th>
+                                <th>Количество</th>
+                                <th>Обновлено</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Модальное окно истории изменений -->
+            <div id="logsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <span class="close" onclick="closeLogsModal()">&times;</span>
+                    <h2>История изменений товара</h2>
+                    <div style="margin-bottom: 15px;">
+                        <button onclick="saveLogsToCSV()" class="btn btn-success">💾 Сохранить в CSV</button>
+                    </div>
+                    <div id="logsTableContainer">
+                        <table id="logsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата изменения</th>
+                                    <th>Название (было → стало)</th>
+                                    <th>Описание (было → стало)</th>
+                                    <th>Количество (было → стало)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
