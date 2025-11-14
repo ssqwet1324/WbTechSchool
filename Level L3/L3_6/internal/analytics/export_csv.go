@@ -26,6 +26,7 @@ func SaveAnalyticsToCSV(filename string, result entity.AnalyticsResult) error {
 
 	// записываем данные в формате csv
 	writer := csv.NewWriter(file)
+	writer.Comma = ';'
 	defer writer.Flush()
 
 	headers := []string{"TotalCount", "TotalSum", "AvgAmount", "Median", "P90"}

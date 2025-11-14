@@ -12,16 +12,19 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Handler - ручки
 type Handler struct {
 	uc *usecase.UseCase
 }
 
+// New - конструктор ручек
 func New(uc *usecase.UseCase) *Handler {
 	return &Handler{
 		uc: uc,
 	}
 }
 
+// CreateItem - создать запись
 func (h *Handler) CreateItem(ctx *ginext.Context) {
 	var req entity.NewItem
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -40,7 +43,6 @@ func (h *Handler) CreateItem(ctx *ginext.Context) {
 }
 
 // GetItems - ручка получения записей
-// TODO тут проверить как передается дата со временем или нет
 func (h *Handler) GetItems(ctx *gin.Context) {
 	// Получаем query-параметры
 	fromStr := ctx.Query("from")
@@ -89,6 +91,7 @@ func (h *Handler) UpdateItem(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"update_id": itemID})
 }
 
+// DeleteItem - удалить запись
 func (h *Handler) DeleteItem(ctx *gin.Context) {
 	itemID := ctx.Param("id")
 
@@ -101,6 +104,7 @@ func (h *Handler) DeleteItem(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"delete_id": itemID})
 }
 
+// GetAnalytics - получить аналитику
 func (h *Handler) GetAnalytics(ctx *gin.Context) {
 	// Получаем query-параметры
 	fromStr := ctx.Query("from")
@@ -134,6 +138,7 @@ func (h *Handler) GetAnalytics(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"analytics": data})
 }
 
+// SaveAnalyticsToCSV - сохранить аналитику в csv файл
 func (h *Handler) SaveAnalyticsToCSV(ctx *gin.Context) {
 	fromStr := ctx.Query("from")
 	toStr := ctx.Query("to")

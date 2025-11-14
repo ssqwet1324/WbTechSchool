@@ -10,6 +10,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Repository - дб
 type Repository struct {
 	DB     *dbpg.DB
 	master *dbpg.Options
