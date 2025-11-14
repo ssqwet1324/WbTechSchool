@@ -15,6 +15,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Repository бд
 type Repository struct {
 	DB     *dbpg.DB
 	master *dbpg.Options
@@ -209,45 +210,7 @@ func (repo *Repository) GetAllEvents(ctx context.Context) ([]entity.CreateEvent,
 	return events, nil
 }
 
-// CleanupExpiredReservations — очищает просроченные бронирования
-//func (repo *Repository) CleanupExpiredReservations(ctx context.Context, redisExist bool) error {
-//	// Получаем все места в статусе reserving
-//	query := `SELECT id, event_id, seat_number FROM seats WHERE status='reserving'`
-//	rows, err := repo.DB.QueryContext(ctx, query)
-//	if err != nil {
-//		return err
-//	}
-//	defer rows.Close()
-//
-//	var toFree []string
-//
-//	for rows.Next() {
-//		var id, eventID string
-//		var seatNumber int
-//		rows.Scan(&id, &eventID, &seatNumber)
-//
-//		// если в redis нет ключа
-//		if !redisExist {
-//			// блокировка отсутствует
-//			toFree = append(toFree, id)
-//		}
-//	}
-//
-//	// Освобождаем места
-//	query = `UPDATE seats SET status='free', user_id='' WHERE id=$1`
-//	if len(toFree) > 0 {
-//		for _, id := range toFree {
-//			_, err := repo.DB.ExecContext(ctx, query, id)
-//			if err != nil {
-//				zlog.Logger.Error().Err(err).Str("seat_id", id).Msg("failed to free seat")
-//			}
-//		}
-//		zlog.Logger.Info().Msgf("Freed %d expired seats", len(toFree))
-//	}
-//
-//	return nil
-//}
-
+// CleanupExpiredReservations - очистить места зарезервированные
 func (repo *Repository) CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int, redisExist bool) error {
 	// если ключ есть — ничего не делаем
 	if redisExist {

@@ -156,27 +156,6 @@ func (uc *UseCase) GetAllEvents(ctx context.Context) ([]entity.CreateEvent, erro
 }
 
 // CleanupExpiredReservations - очистка просроченных броней
-//func (uc *UseCase) CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int) error {
-//	key := generateRedisKey(eventID, seatNumber)
-//
-//	zlog.Logger.Info().Str("key", key).Msg("KEY для очистки")
-//
-//	// проверяем такой ключ в редис
-//	existKey, err := uc.repo.CheckKeyInRedis(ctx, key)
-//	if err != nil {
-//		return fmt.Errorf("error get exist key: %w", err)
-//	}
-//
-//	err = uc.repo.CleanupExpiredReservations(ctx, existKey)
-//	if err != nil {
-//		zlog.Logger.Error().Err(err).Msg("failed to cleanup expired reservation lock")
-//
-//		return fmt.Errorf("error clean expired reservation: %w", err)
-//	}
-//
-//	return nil
-//}
-
 func (uc *UseCase) CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int) error {
 	key := generateRedisKey(eventID, seatNumber)
 

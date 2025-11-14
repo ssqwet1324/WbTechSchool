@@ -10,12 +10,14 @@ type CreateEvent struct {
 	TotalSeats int       `json:"total_seats"`
 }
 
+// TotalSeats - количество сидений
 type TotalSeats struct {
 	Rows        int `json:"rows"`
 	SeatsPerRow int `json:"seats_per_row"`
 	StartNumber int `json:"start_number"`
 }
 
+// Seat - номер сидения
 type Seat struct {
 	SeatNumber int    `json:"seat_number"`
 	SeatID     string `json:"seat_id"`

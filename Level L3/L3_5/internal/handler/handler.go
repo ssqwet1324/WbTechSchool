@@ -9,10 +9,12 @@ import (
 	"github.com/wb-go/wbf/ginext"
 )
 
+// EventHandler - ручки
 type EventHandler struct {
 	uc *usecase.UseCase
 }
 
+// New - конструктор
 func New(uc *usecase.UseCase) *EventHandler {
 	return &EventHandler{
 		uc: uc,

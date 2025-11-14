@@ -31,6 +31,8 @@
       - DB_HOST=postgres
       - DB_PORT=5432
       - TIMEZONE=Europe/Moscow
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy

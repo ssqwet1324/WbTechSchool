@@ -23,8 +23,8 @@ func Run() {
 	// Logger
 	zlog.InitConsole()
 
-	serviceCfg := config.New()
-	if serviceCfg == nil {
+	serviceCfg, err := config.New()
+	if serviceCfg == nil || err != nil {
 		zlog.Logger.Fatal().Msg("Failed to load config")
 		return
 	}
