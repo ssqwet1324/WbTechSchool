@@ -14,6 +14,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// RepositoryProvider - функции репы
 type RepositoryProvider interface {
 	CreateProduct(ctx context.Context, product entity.Product) error
 	GetProduct(ctx context.Context, productName string) (product entity.Product, err error)

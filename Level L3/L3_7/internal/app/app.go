@@ -14,6 +14,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Run - запуск сервиса
 func Run() {
 	server := ginext.New("release")
 
@@ -21,8 +22,8 @@ func Run() {
 
 	zlog.InitConsole()
 
-	serviceCfg := config.New()
-	if serviceCfg == nil {
+	serviceCfg, err := config.New()
+	if serviceCfg == nil || err != nil {
 		zlog.Logger.Fatal().Msg("Failed to load config")
 		return
 	}

@@ -20,7 +20,8 @@ func SaveProductHistoryToCSVWriter(w io.Writer, history []entity.ProductLogs) er
 	writer.Comma = ';'
 	defer writer.Flush()
 
-	headers := []string{"ProductID", "OldName", "NewName", "OldDescription", "NewDescription", "OldQuantity", "NewQuantity", "ChangedAt"}
+	headers := []string{"ProductID", "OldName", "NewName", "OldDescription",
+		"NewDescription", "OldQuantity", "NewQuantity", "ChangedAt"}
 	if err := writer.Write(headers); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Error writing headers")
 		return err
