@@ -1,0 +1,7 @@
+hello world
+this is a test
+pattern matching line
+another line with pattern
+just some random text
+Pattern in different case
+final line
