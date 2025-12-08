@@ -32,8 +32,8 @@ docker-compose up -d
 
 1. Сервис будет доступен по адресу: `http://localhost:8080`
 Основная ручка /metrics: `http://localhost:8080/metrics`
-
 _Данная ручка автоматически вызывается каждые 5s для обновления актуальных данных, изменить можно в файле `/pkg/prometheus/prometheus.yml`_
+
 2. Графики можно посмотреть по адресу `http://localhost:3000`. Пароль и логин те, которые указаны в `docker-compose.yml`(admin, admin)
 Заходим в Dashboards, выбираем `Create Dashboard`, далее `Add Visualisation`, справа выбираем графана, далее `Configure a new data source`,
 тут выбираем `prometheus`, вписываем `http://prometheus:9090`(или ваш хост для prometheus), сохраняем.
