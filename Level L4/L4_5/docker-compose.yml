@@ -1,0 +1,9 @@
+﻿services:
+  api_optimization:
+    build: api_optimization
+    container_name: api_optimization
+    ports:
+      - "8081:8081"
+    environment:
+      - APP_PORT=8081
+    depends_on: []
