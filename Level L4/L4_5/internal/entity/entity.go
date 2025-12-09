@@ -1,6 +1,7 @@
 package entity
 
 // Input - структура для ввода чисел
+
 type Input struct {
 	A int `json:"a"`
 	B int `json:"b"`
@@ -9,4 +10,15 @@ type Input struct {
 // Output - вывод суммы
 type Output struct {
 	Sum int `json:"sum"`
+}
+
+// ErrorResponse - ответ ошибки
+type ErrorResponse struct {
+	Error ErrorDetail `json:"error"`
+}
+
+// ErrorDetail - информация об ошибке
+type ErrorDetail struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }

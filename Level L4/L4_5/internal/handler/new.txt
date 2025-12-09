@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: api_optimization/internal/handler
+cpu: 12th Gen Intel(R) Core(TM) i5-12500H
+BenchmarkSumHandler-16    	  325923	      3467 ns/op	    8701 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  338008	      3656 ns/op	    8718 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  313965	      3358 ns/op	    8688 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  346648	      3403 ns/op	    8689 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  364416	      3352 ns/op	    8718 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  363804	      3272 ns/op	    8682 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  379890	      3280 ns/op	    8698 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  380512	      3409 ns/op	    8705 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  343026	      3348 ns/op	    8684 B/op	      37 allocs/op
+BenchmarkSumHandler-16    	  359361	      3301 ns/op	    8717 B/op	      37 allocs/op
+PASS
+ok  	api_optimization/internal/handler	12.282s
