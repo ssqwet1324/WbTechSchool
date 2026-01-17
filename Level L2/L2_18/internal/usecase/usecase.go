@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"L2_18/internal/entity"
+	"errors"
 	"fmt"
 	"time"
 
@@ -46,7 +47,14 @@ func (uc *UseCase) SaveEvent(event entity.Calendar) error {
 func (uc *UseCase) UpdateEvent(event entity.Calendar) error {
 	err := uc.provider.UpdateEvent(event)
 	if err != nil {
-		return fmt.Errorf("there is no such event: %w", err)
+		if errors.Is(err, entity.ErrEventNotFound) {
+			return entity.ErrEventNotFound
+		}
+		if errors.Is(err, entity.ErrNoEvents) {
+			return entity.ErrNoEvents
+		}
+
+		return fmt.Errorf("failed to update event: %w", err)
 	}
 
 	return nil
@@ -56,7 +64,13 @@ func (uc *UseCase) UpdateEvent(event entity.Calendar) error {
 func (uc *UseCase) DeleteEvent(event entity.Calendar) error {
 	err := uc.provider.DeleteEvent(event)
 	if err != nil {
-		return fmt.Errorf("there is no such event: %w", err)
+		if errors.Is(err, entity.ErrEventNotFound) {
+			return entity.ErrEventNotFound
+		}
+		if errors.Is(err, entity.ErrNoEvents) {
+			return entity.ErrNoEvents
+		}
+		return fmt.Errorf("failed to delete event: %w", err)
 	}
 
 	return nil
@@ -66,28 +80,39 @@ func (uc *UseCase) DeleteEvent(event entity.Calendar) error {
 func (uc *UseCase) GetEventForDay(userID, date string) ([]entity.Calendar, error) {
 	dateTime, err := ParseDate(date)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse data: %w", err)
+		return nil, fmt.Errorf("%w: %v", entity.ErrParsing, err)
 	}
 
 	events, err := uc.provider.GetEventForDay(userID, dateTime)
 	if err != nil {
-		return nil, fmt.Errorf("could not get event for day: %w", err)
+		if errors.Is(err, entity.ErrEventNotFound) {
+			return nil, entity.ErrEventNotFound
+		}
+		if errors.Is(err, entity.ErrNoEvents) {
+			return nil, entity.ErrNoEvents
+		}
+		return nil, fmt.Errorf("failed to get events for day: %w", err)
 	}
 
 	return events, nil
 }
 
-// GetEventsForWeek - получить события на недел
 // GetEventsForWeek - получить события на неделю
 func (uc *UseCase) GetEventsForWeek(userID, date string) ([]entity.Calendar, error) {
 	dateTime, err := ParseDate(date)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse data: %w", err)
+		return nil, fmt.Errorf("%w: %v", entity.ErrParsing, err)
 	}
 
 	events, err := uc.provider.GetEventsForWeek(userID, dateTime)
 	if err != nil {
-		return nil, fmt.Errorf("could not get events for week: %w", err)
+		if errors.Is(err, entity.ErrEventNotFound) {
+			return nil, entity.ErrEventNotFound
+		}
+		if errors.Is(err, entity.ErrNoEvents) {
+			return nil, entity.ErrNoEvents
+		}
+		return nil, fmt.Errorf("failed to get events for week: %w", err)
 	}
 
 	return events, nil
@@ -97,12 +122,18 @@ func (uc *UseCase) GetEventsForWeek(userID, date string) ([]entity.Calendar, err
 func (uc *UseCase) GetEventForMonth(userID, date string) ([]entity.Calendar, error) {
 	dateTime, err := ParseDate(date)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse data: %w", err)
+		return nil, fmt.Errorf("%w: %v", entity.ErrParsing, err)
 	}
 
 	events, err := uc.provider.GetEventForMonth(userID, dateTime)
 	if err != nil {
-		return nil, fmt.Errorf("could not get event for month: %w", err)
+		if errors.Is(err, entity.ErrEventNotFound) {
+			return nil, entity.ErrEventNotFound
+		}
+		if errors.Is(err, entity.ErrNoEvents) {
+			return nil, entity.ErrNoEvents
+		}
+		return nil, fmt.Errorf("failed to get events for month: %w", err)
 	}
 
 	return events, nil
@@ -114,8 +145,13 @@ func ParseDate(date string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("date is empty")
 	}
 	if len(date) != 10 {
-		return time.Time{}, fmt.Errorf("date is invalid")
+		return time.Time{}, fmt.Errorf("date is invalid: expected format YYYY-MM-DD")
 	}
 
-	return time.Parse("2006-01-02", date)
+	parsedDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse date: %w", err)
+	}
+
+	return parsedDate, nil
 }

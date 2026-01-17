@@ -1,6 +1,9 @@
 package entity
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 // Calendar - структура хранения данных
 type Calendar struct {
@@ -9,3 +12,9 @@ type Calendar struct {
 	DataEvent time.Time `json:"data_event"`
 	Text      string    `json:"text"`
 }
+
+var (
+	ErrEventNotFound = errors.New("event not found")
+	ErrNoEvents      = errors.New("no events")
+	ErrParsing       = errors.New("parsing error")
+)

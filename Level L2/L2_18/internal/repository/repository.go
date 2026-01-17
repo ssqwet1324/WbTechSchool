@@ -2,8 +2,6 @@ package repository
 
 import (
 	"L2_18/internal/entity"
-	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -42,8 +40,6 @@ func (repo *Repository) SaveEvent(event entity.Calendar) error {
 	// сохраняем по userID событие и дату
 	repo.Storage[event.UserID][data] = append(repo.Storage[event.UserID][data], event)
 
-	repo.Log.Info("Saving event", zap.String("event_name", event.NameEvent))
-
 	return nil
 }
 
@@ -55,7 +51,7 @@ func (repo *Repository) GetEventForMonth(userID string, date time.Time) ([]entit
 	// проверяем что такой id есть
 	userEvents, ok := repo.Storage[userID]
 	if !ok {
-		return nil, errors.New("user not found")
+		return nil, entity.ErrNoEvents
 	}
 
 	var result []entity.Calendar
@@ -70,7 +66,7 @@ func (repo *Repository) GetEventForMonth(userID string, date time.Time) ([]entit
 	}
 
 	if len(result) == 0 {
-		return nil, errors.New("no events for this month")
+		return nil, entity.ErrNoEvents
 	}
 
 	return result, nil
@@ -83,25 +79,19 @@ func (repo *Repository) GetEventForDay(userID string, date time.Time) ([]entity.
 
 	userEvents, ok := repo.Storage[userID]
 	if !ok {
-		return nil, errors.New("user not found")
+		return nil, entity.ErrNoEvents
 	}
 
-	var result []entity.Calendar
-	year, month, day := date.Date()
+	// нормализуем дату для поиска
+	normalizedDate := date.Truncate(24 * time.Hour)
 
-	// проходимся по срезу и сравниваем дату
-	for eventDay, events := range userEvents {
-		y, m, d := eventDay.Date()
-		if y == year && m == month && d == day {
-			result = append(result, events...)
-		}
+	// прямой поиск по ключу вместо перебора
+	events, ok := userEvents[normalizedDate]
+	if !ok || len(events) == 0 {
+		return nil, entity.ErrNoEvents
 	}
 
-	if len(result) == 0 {
-		return nil, errors.New("no events for this day")
-	}
-
-	return result, nil
+	return events, nil
 }
 
 // GetEventsForWeek - получаем событие на неделю
@@ -111,14 +101,14 @@ func (repo *Repository) GetEventsForWeek(userID string, date time.Time) ([]entit
 
 	userEvents, ok := repo.Storage[userID]
 	if !ok {
-		return nil, errors.New("user not found")
+		return nil, entity.ErrNoEvents
 	}
 
 	var result []entity.Calendar
 
 	// находим понедельник недели
 	weekday := int(date.Weekday())
-	if weekday == 0 { // если воскресенье, в Go это 0
+	if weekday == 0 { // если воскресенье
 		weekday = 7
 	}
 
@@ -133,7 +123,7 @@ func (repo *Repository) GetEventsForWeek(userID string, date time.Time) ([]entit
 	}
 
 	if len(result) == 0 {
-		return nil, errors.New("no events for this week")
+		return nil, entity.ErrNoEvents
 	}
 
 	return result, nil
@@ -146,29 +136,36 @@ func (repo *Repository) UpdateEvent(event entity.Calendar) error {
 
 	userEvents, ok := repo.Storage[event.UserID]
 	if !ok {
-		return errors.New("user not found")
+		return entity.ErrNoEvents
 	}
 
 	data := event.DataEvent.Truncate(24 * time.Hour)
 
 	events, ok := userEvents[data]
-	if !ok {
-		return errors.New("no events on this date")
+	if !ok || len(events) == 0 {
+		return entity.ErrNoEvents
 	}
 
-	// тут обновляем данные у события
+	// ищем событие для обновления
+	found := false
 	for i := range events {
-		if events[i].DataEvent == event.DataEvent {
-			events[i].NameEvent = event.NameEvent
+		if events[i].NameEvent == event.NameEvent && events[i].DataEvent.Equal(event.DataEvent) {
 			events[i].Text = event.Text
+			// если нужно обновить имя, то обновляем
+			if event.NameEvent != "" {
+				events[i].NameEvent = event.NameEvent
+			}
+			found = true
 			break
 		}
 	}
 
+	if !found {
+		return entity.ErrEventNotFound
+	}
+
 	// сохраняем то что обновили
 	userEvents[data] = events
-
-	repo.Log.Info("Updating event", zap.String("event_name", event.NameEvent))
 
 	return nil
 }
@@ -180,24 +177,29 @@ func (repo *Repository) DeleteEvent(event entity.Calendar) error {
 
 	userEvents, ok := repo.Storage[event.UserID]
 	if !ok {
-		return errors.New("user not found")
+		return entity.ErrNoEvents
 	}
 
 	data := event.DataEvent.Truncate(24 * time.Hour)
 
 	events, ok := userEvents[data]
-	if !ok {
-		return errors.New("no events on this date")
+	if !ok || len(events) == 0 {
+		return entity.ErrNoEvents
 	}
-
-	fmt.Println("список events", events)
 
 	// убираем из среза не нужное событие(проверяем имя и дату)
 	filtered := make([]entity.Calendar, 0, len(events))
+	deleted := false
 	for _, e := range events {
-		if !(e.NameEvent == event.NameEvent && e.DataEvent.Equal(event.DataEvent)) {
-			filtered = append(filtered, e)
+		if e.NameEvent == event.NameEvent && e.DataEvent.Equal(event.DataEvent) {
+			deleted = true
+			continue // пропускаем это событие
 		}
+		filtered = append(filtered, e)
+	}
+
+	if !deleted {
+		return entity.ErrEventNotFound
 	}
 
 	// если больше нет событий на дату удаляем ключ
@@ -207,8 +209,6 @@ func (repo *Repository) DeleteEvent(event entity.Calendar) error {
 		// сохраняем измененный срез
 		userEvents[data] = filtered
 	}
-
-	repo.Log.Info("Deleting event", zap.String("event", event.NameEvent), zap.String("date", data.String()))
 
 	return nil
 }
