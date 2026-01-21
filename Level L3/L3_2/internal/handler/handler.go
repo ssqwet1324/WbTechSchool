@@ -15,9 +15,9 @@ type ShortenerHandler struct {
 	uc *usecase.UseCase
 }
 
-func New(usecase *usecase.UseCase) *ShortenerHandler {
+func New(uc *usecase.UseCase) *ShortenerHandler {
 	return &ShortenerHandler{
-		uc: usecase,
+		uc: uc,
 	}
 }
 
@@ -54,7 +54,7 @@ func (h *ShortenerHandler) RedirectToShorten(ctx *gin.Context) {
 		return
 	}
 
-	// Асинхронно сохраняем клик в аналитику + проверка на популярный URL
+	// параллельно сохраняем клик в аналитику + проверка на популярный URL
 	go func() {
 		//TODO сделать чтобы выдавало норм браузер а не длинный
 		ua := ctx.Request.UserAgent()
@@ -73,7 +73,7 @@ func (h *ShortenerHandler) RedirectToShorten(ctx *gin.Context) {
 		}
 	}()
 
-	// Редирект на оригинальный URL
+	// редирект на оригинальный URL
 	ctx.Redirect(http.StatusTemporaryRedirect, originalURL)
 
 	ctx.JSON(http.StatusTemporaryRedirect, gin.H{"data": originalURL})

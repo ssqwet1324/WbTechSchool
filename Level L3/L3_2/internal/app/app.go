@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"shortener/internal/cache"
 	service "shortener/internal/config"
 	"shortener/internal/handler"
@@ -20,46 +18,32 @@ import (
 func Run() {
 	server := ginext.New()
 
-	// Logger
 	zlog.Init()
 
-	serviceCfg := service.New()
-	if serviceCfg == nil {
-		zlog.Logger.Fatal().Msg("Failed to load config")
-		return
+	cfg, err := service.New()
+	if err != nil {
+		panic("error initializing service" + err.Error())
 	}
 
-	// Логируем конфигурацию для отладки
-	zlog.Logger.Info().
-		Str("db_host", serviceCfg.DbHost).
-		Int("db_port", serviceCfg.DbPort).
-		Str("db_name", serviceCfg.DbName).
-		Str("db_user", serviceCfg.DbUser).
-		Msg("Loaded configuration")
-
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		serviceCfg.DbUser,
-		serviceCfg.DbPassword,
-		serviceCfg.DbHost,
-		serviceCfg.DbPort,
-		serviceCfg.DbName,
-	)
-
-	zlog.Logger.Info().Str("dsn", dsn).Msg("Database connection string")
-
-	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    serviceCfg.MaxOpenConns,
-		MaxIdleConns:    serviceCfg.MaxIdleConns,
-		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime,
 	})
 
-	shortenerMigrations := migrations.New(repo, serviceCfg)
+	shortenerMigrations := migrations.New(repo, cfg)
 	if err := shortenerMigrations.InitTables(context.Background()); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
 
-	redisClient := redis.New(serviceCfg.RedisAddr, "", 0)
+	redisClient := redis.New(cfg.RedisAddr, "", 0)
+	defer func(redisClient *redis.Client) {
+		err := redisClient.Close()
+		if err != nil {
+			zlog.Logger.Error().Err(err).Msg("Error closing redis connection")
+		}
+	}(redisClient)
+
 	shortenerCache := cache.New(*redisClient)
 
 	shortenerUseCase := usecase.New(repo, shortenerCache)
@@ -71,6 +55,6 @@ func Run() {
 	server.GET("/analytics/:short_url", shortenerHandler.GetAnalytics)
 
 	if err := server.Run(":8081"); err != nil {
-		log.Fatal(err)
+		zlog.Logger.Fatal().Err(err).Msg("error starting server")
 	}
 }

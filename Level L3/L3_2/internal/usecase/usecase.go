@@ -29,14 +29,16 @@ type CacheProvider interface {
 	GetShortUrlFromCache(ctx context.Context, key string) (*entity.ShortenURL, error)
 }
 
-// cacheKey - ключ редиса
-const cacheKey = "short_url:"
+const (
+	// cacheKey - ключ редиса
+	cacheKey = "short_url:"
 
-// countPopular - количество переход за день для популярной ссылки
-const countPopular = 3
+	// countPopular - количество переход за день для популярной ссылки
+	countPopular = 3
 
-// TTLPopularURL - время жизни популярной ссылки в кеше
-const TTLPopularURL = 7 * 24 * time.Hour
+	// TTLPopularURL - время жизни популярной ссылки в кеше
+	TTLPopularURL = 7 * 24 * time.Hour
+)
 
 // UseCase - бизнес логика
 type UseCase struct {

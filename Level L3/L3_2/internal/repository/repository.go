@@ -116,9 +116,8 @@ func (repo *Repository) AddAnalytics(ctx context.Context, urls entity.ShortenURL
 
 	err := repo.DB.QueryRowContext(ctx, `
 		SELECT total_clicks, clicks_by_day, clicks_by_month, clicks_by_user_agent
-		FROM clicks_aggregate
-		WHERE short_url = $1
-	`, urls.ShortURL).Scan(&agg.Total, &agg.ByDay, &agg.ByMonth, &agg.ByUserAgent)
+		FROM clicks_aggregate WHERE short_url = $1`, urls.ShortURL).
+		Scan(&agg.Total, &agg.ByDay, &agg.ByMonth, &agg.ByUserAgent)
 
 	existingByDay := map[string]int{}
 	existingByMonth := map[string]int{}
