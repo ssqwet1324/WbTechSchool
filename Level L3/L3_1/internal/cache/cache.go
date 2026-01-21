@@ -27,30 +27,30 @@ func New(redisClient *redis.Client) *Cache {
 func (c *Cache) AddNotifyInCash(ctx context.Context, key string, notifyCash entity.NotifyCache) error {
 	data, err := json.Marshal(notifyCash)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal notifyCash: %w", err)
 	}
 
 	return c.cache.Set(ctx, key, data)
 }
 
 // GetNotifyInCash - получить уведомление из кеша
-func (c *Cache) GetNotifyInCash(ctx context.Context, key string) (entity.NotifyCache, error) {
+func (c *Cache) GetNotifyInCash(ctx context.Context, key string) (*entity.NotifyCache, error) {
 	var notifyCash entity.NotifyCache
 
 	val, err := c.cache.Get(ctx, key)
 	if errors.Is(err, redis.NoMatches) {
 		zlog.Logger.Info().Msgf("No notify in cash")
-		return notifyCash, nil
+		return &notifyCash, nil
 	} else if err != nil {
-		return notifyCash, fmt.Errorf("get notify in cash err: %w", err)
+		return &notifyCash, fmt.Errorf("get notify in cash err: %w", err)
 	}
 
 	err = json.Unmarshal([]byte(val), &notifyCash)
 	if err != nil {
-		return entity.NotifyCache{}, fmt.Errorf("unmarshal notify in cash err: %w", err)
+		return nil, fmt.Errorf("unmarshal notify in cash err: %w", err)
 	}
 
-	return notifyCash, nil
+	return &notifyCash, nil
 }
 
 // DeleteNotifyInCash - удаляет уведомление из кэша по ключу

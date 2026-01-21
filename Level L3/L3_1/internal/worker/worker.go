@@ -15,16 +15,16 @@ import (
 // Worker - структура воркера
 type Worker struct {
 	ctx       context.Context
-	useCase   *usecase.UseCaseNotify
+	usecase   *usecase.UseCase
 	publisher *rabbit.Publisher
 	wakeup    chan bool
 }
 
 // New - конструктор
-func New(ctx context.Context, useCase *usecase.UseCaseNotify, publisher *rabbit.Publisher) *Worker {
+func New(ctx context.Context, useCase *usecase.UseCase, publisher *rabbit.Publisher) *Worker {
 	return &Worker{
 		ctx:       ctx,
-		useCase:   useCase,
+		usecase:   useCase,
 		publisher: publisher,
 		wakeup:    make(chan bool, 1),
 	}
@@ -70,7 +70,7 @@ func (w *Worker) Run() {
 				// перейти к следующей итерации, чтобы заново выбрать ближайшее уведомление
 				continue
 			case <-timer.C:
-				// время пришло — перед отправкой убеждаемся, что уведомление всё ещё актуально
+				// время пришло - перед отправкой убеждаемся, что уведомление всё ещё актуально
 				w.SendNotification(*notify)
 			}
 		}
@@ -79,20 +79,20 @@ func (w *Worker) Run() {
 
 // getNextNotify - получаем следующие уведомление
 func (w *Worker) getNextNotify() (*entity.NotifyCache, error) {
-	return w.useCase.GetNearNotify(w.ctx)
+	return w.usecase.GetNearNotify(w.ctx)
 }
 
 // SendNotification - отправляем уведомление
 func (w *Worker) SendNotification(notify entity.NotifyCache) {
 	// проверка на актуальность в кеше уведомления
-	cached, err := w.useCase.GetNotifyInCash(w.ctx, notify.NotifyID.String())
+	cached, err := w.usecase.GetNotifyInCash(w.ctx, notify.NotifyID.String())
 	if err == nil {
-		// Если нет в кэше — значит удален
+		// Если нет в кэше - значит удален
 		if cached.NotifyID == uuid.Nil {
 			zlog.Logger.Info().Str("notifyID", notify.NotifyID.String()).Msg("Уведомление отсутствует в кэше, отправка отменена")
 			return
 		}
-		// Если время изменилось на будущее — не отправляем сейчас
+		// Если время изменилось на будущее - не отправляем сейчас
 		if cached.EventTime.After(time.Now()) {
 			zlog.Logger.Info().
 				Str("notifyID", notify.NotifyID.String()).
@@ -124,12 +124,12 @@ func (w *Worker) SendNotification(notify entity.NotifyCache) {
 	}
 
 	// удаляем из бд
-	if err := w.useCase.DeleteNotification(w.ctx, notify.NotifyID.String()); err != nil {
+	if err := w.usecase.DeleteNotification(w.ctx, notify.NotifyID.String()); err != nil {
 		zlog.Logger.Err(err).Str("title", notify.Title).Msg("Не удалось удалить уведомление из БД после отправки")
 	}
 
 	// удаляем из кеша
-	if err := w.useCase.DeleteNotifyInCash(w.ctx, notify.NotifyID.String()); err != nil {
+	if err := w.usecase.DeleteNotifyInCash(w.ctx, notify.NotifyID.String()); err != nil {
 		zlog.Logger.Err(err).Str("title", notify.Title).Msg("Не удалось удалить уведомление из кэша после отправки")
 	}
 
@@ -150,7 +150,7 @@ func (w *Worker) RetryNotify(notify entity.NotifyCache) {
 	}
 	notify.EventTime = time.Now().Add(delay)
 
-	if err := w.useCase.AddNotifyInCash(w.ctx, notify); err != nil {
+	if err := w.usecase.AddNotifyInCash(w.ctx, notify); err != nil {
 		zlog.Logger.Err(err).Str("title", notify.Title).Msg("Не удалось обновить уведомление в кэше для повторной отправки")
 	}
 }

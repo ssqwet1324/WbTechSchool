@@ -23,7 +23,7 @@ type Repository struct {
 func New(masterDSN string, options *dbpg.Options) *Repository {
 	masterDB, err := sql.Open("postgres", masterDSN)
 	if err != nil {
-		log.Fatalf("failed to open master DB: %v", err)
+		log.Fatalf("failed to open master db: %v", err)
 	}
 
 	masterDB.SetMaxOpenConns(options.MaxOpenConns)
@@ -110,7 +110,8 @@ func (r *Repository) DeleteNotification(ctx context.Context, notifyID uuid.UUID)
 
 // GetNotifications - получить все уведомления по userID
 func (r *Repository) GetNotifications(ctx context.Context, userID string) ([]entity.Notify, error) {
-	query := `SELECT notify_id, title, body, status, sending_date FROM notifications WHERE user_id = $1 `
+	query := `SELECT notify_id, title, body, status, sending_date
+	FROM notifications WHERE user_id = $1 `
 	rows, err := r.DB.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query notifications: %w", err)

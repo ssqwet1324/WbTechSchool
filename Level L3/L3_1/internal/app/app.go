@@ -10,7 +10,6 @@ import (
 	"L3_1/internal/usecase"
 	"L3_1/internal/worker"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/wb-go/wbf/dbpg"
@@ -30,20 +29,10 @@ func Run() {
 	// Config
 	cfg, err := config.New()
 	if err != nil {
-		panic(err)
+		panic("config init error: " + err.Error())
 	}
 
-	// Repository
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		cfg.DbUser,
-		cfg.DbPassword,
-		cfg.DbHost,
-		cfg.DbPort,
-		cfg.DbName,
-	)
-
-	repo := repository.New(dsn, &dbpg.Options{
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
 		MaxOpenConns:    cfg.MaxOpenConns,
 		MaxIdleConns:    cfg.MaxIdleConns,
 		ConnMaxLifetime: cfg.ConnMaxLifetime * time.Minute,

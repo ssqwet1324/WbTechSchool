@@ -12,12 +12,12 @@ import (
 
 // NotifyHandler - конструктор
 type NotifyHandler struct {
-	useCase *usecase.UseCaseNotify
+	useCase *usecase.UseCase
 	worker  *worker.Worker
 }
 
 // New - конструктор
-func New(useCase *usecase.UseCaseNotify, worker *worker.Worker) *NotifyHandler {
+func New(useCase *usecase.UseCase, worker *worker.Worker) *NotifyHandler {
 	return &NotifyHandler{
 		useCase: useCase,
 		worker:  worker,

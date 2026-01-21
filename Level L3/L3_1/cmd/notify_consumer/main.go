@@ -8,9 +8,15 @@ import (
 	"github.com/wb-go/wbf/rabbitmq"
 )
 
+const (
+	rabbitLocalUrl = "amqp://guest:guest@localhost:5672/"
+	retries        = 5
+	pause          = 2 * time.Second
+)
+
 // консюмер
 func main() {
-	conn, err := rabbitmq.Connect("amqp://guest:guest@localhost:5672/", 5, 2*time.Second)
+	conn, err := rabbitmq.Connect(rabbitLocalUrl, retries, pause)
 	if err != nil {
 		log.Fatalf("failed to connect to rabbitmq: %v", err)
 	}
@@ -27,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("declare queue: %v", err)
 	}
-	_ = queue // очередь объявлена
+	_ = queue
 
 	consumer := rabbitmq.NewConsumer(ch, rabbitmq.NewConsumerConfig("notify_queue"))
 	msgChan := make(chan []byte)
@@ -41,7 +47,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	log.Println("kafka started: waiting for messages from notify_queue...")
+	log.Println("rabbitmq started: waiting for messages from notify_queue...")
 	for {
 		select {
 		case <-ctx.Done():

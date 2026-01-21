@@ -21,7 +21,7 @@ type RepositoryProvider interface {
 // CacheProvider - интерфейсы кеша
 type CacheProvider interface {
 	AddNotifyInCash(ctx context.Context, key string, notifyCash entity.NotifyCache) error
-	GetNotifyInCash(ctx context.Context, key string) (entity.NotifyCache, error)
+	GetNotifyInCash(ctx context.Context, key string) (*entity.NotifyCache, error)
 	DeleteNotifyInCash(ctx context.Context, key string) error
 	GetAllNotifyKeys(ctx context.Context) ([]string, error)
 }
@@ -29,15 +29,15 @@ type CacheProvider interface {
 // CacheKey - константа для ключа в кэше
 const CacheKey = "notify:"
 
-// UseCaseNotify - структура для бизнес-логики
-type UseCaseNotify struct {
+// UseCase - структура для бизнес-логики
+type UseCase struct {
 	repository RepositoryProvider
 	cache      CacheProvider
 }
 
 // New - конструктор для usecase
-func New(repository RepositoryProvider, cache CacheProvider) *UseCaseNotify {
-	return &UseCaseNotify{
+func New(repository RepositoryProvider, cache CacheProvider) *UseCase {
+	return &UseCase{
 		repository: repository,
 		cache:      cache,
 	}
@@ -48,13 +48,13 @@ func generateNotifyID() uuid.UUID {
 	return uuid.New()
 }
 
-// BuildKey - сформировать ключ для редиса0
-func BuildKey(notifyID string) string {
+// buildKey - сформировать ключ для редиса0
+func buildKey(notifyID string) string {
 	return fmt.Sprintf("%s%s", CacheKey, notifyID)
 }
 
 // CreateNotification - сохранить уведомление
-func (u *UseCaseNotify) CreateNotification(ctx context.Context, notify entity.Notify) (entity.NotifyCache, error) {
+func (u *UseCase) CreateNotification(ctx context.Context, notify entity.Notify) (entity.NotifyCache, error) {
 	notify.NotifyID = generateNotifyID()
 
 	// добавляем уведомление в БД
@@ -72,7 +72,7 @@ func (u *UseCaseNotify) CreateNotification(ctx context.Context, notify entity.No
 		UserID:    notify.UserID,
 	}
 
-	key := BuildKey(notify.NotifyID.String())
+	key := buildKey(notify.NotifyID.String())
 
 	// добавляем в кэш
 	if err := u.cache.AddNotifyInCash(ctx, key, notifyCache); err != nil {
@@ -85,8 +85,8 @@ func (u *UseCaseNotify) CreateNotification(ctx context.Context, notify entity.No
 }
 
 // CheckStatusNotification - проверяем статус уведомления
-func (u *UseCaseNotify) CheckStatusNotification(ctx context.Context, notifyID string) (string, error) {
-	data, err := u.cache.GetNotifyInCash(ctx, BuildKey(notifyID))
+func (u *UseCase) CheckStatusNotification(ctx context.Context, notifyID string) (string, error) {
+	data, err := u.cache.GetNotifyInCash(ctx, buildKey(notifyID))
 	if err == nil && data.Status {
 		return "Notification sent", nil
 	}
@@ -96,7 +96,7 @@ func (u *UseCaseNotify) CheckStatusNotification(ctx context.Context, notifyID st
 		return "Notification not sent", nil
 	}
 
-	// иначе проверим в БД
+	// проверим в БД
 	status, err := u.repository.CheckStatusNotification(ctx, notifyIDUUID)
 	if err != nil {
 		return "", fmt.Errorf("CheckStatusNotification: %w", err)
@@ -106,7 +106,7 @@ func (u *UseCaseNotify) CheckStatusNotification(ctx context.Context, notifyID st
 }
 
 // DeleteNotification - удаляем уведомление
-func (u *UseCaseNotify) DeleteNotification(ctx context.Context, notifyID string) error {
+func (u *UseCase) DeleteNotification(ctx context.Context, notifyID string) error {
 	notifyIDUUID, err := uuid.Parse(notifyID)
 	if err != nil {
 		return fmt.Errorf("DeleteNotification: %w", err)
@@ -127,24 +127,24 @@ func (u *UseCaseNotify) DeleteNotification(ctx context.Context, notifyID string)
 }
 
 // GetNotifications - получить все уведомления пользователя
-func (u *UseCaseNotify) GetNotifications(ctx context.Context, userID string) ([]entity.Notify, error) {
+func (u *UseCase) GetNotifications(ctx context.Context, userID string) ([]entity.Notify, error) {
 	return u.repository.GetNotifications(ctx, userID)
 }
 
 // GetNotifyInCash - получить уведомление из кэша
-func (u *UseCaseNotify) GetNotifyInCash(ctx context.Context, notifyID string) (entity.NotifyCache, error) {
-	key := BuildKey(notifyID)
+func (u *UseCase) GetNotifyInCash(ctx context.Context, notifyID string) (*entity.NotifyCache, error) {
+	key := buildKey(notifyID)
 	return u.cache.GetNotifyInCash(ctx, key)
 }
 
 // AddNotifyInCash - добавить уведомление в кэш
-func (u *UseCaseNotify) AddNotifyInCash(ctx context.Context, notifyCache entity.NotifyCache) error {
-	key := BuildKey(notifyCache.NotifyID.String())
+func (u *UseCase) AddNotifyInCash(ctx context.Context, notifyCache entity.NotifyCache) error {
+	key := buildKey(notifyCache.NotifyID.String())
 	return u.cache.AddNotifyInCash(ctx, key, notifyCache)
 }
 
 // GetNearNotify - возвращает ближайшее по времени уведомление из кэша
-func (u *UseCaseNotify) GetNearNotify(ctx context.Context) (*entity.NotifyCache, error) {
+func (u *UseCase) GetNearNotify(ctx context.Context) (*entity.NotifyCache, error) {
 	// получаем все ключи
 	keys, err := u.GetAllNotifyKeys(ctx)
 	if err != nil {
@@ -166,7 +166,7 @@ func (u *UseCaseNotify) GetNearNotify(ctx context.Context) (*entity.NotifyCache,
 
 		// ищем ближайшее событие
 		if nearest == nil || notify.EventTime.Before(nearest.EventTime) {
-			nearest = &notify
+			nearest = notify
 		}
 	}
 
@@ -179,13 +179,13 @@ func (u *UseCaseNotify) GetNearNotify(ctx context.Context) (*entity.NotifyCache,
 }
 
 // GetAllNotifyKeys - получаем ключи из кэша
-func (u *UseCaseNotify) GetAllNotifyKeys(ctx context.Context) ([]string, error) {
+func (u *UseCase) GetAllNotifyKeys(ctx context.Context) ([]string, error) {
 	return u.cache.GetAllNotifyKeys(ctx)
 }
 
 // DeleteNotifyInCash - удаляем уведомление из кеша
-func (u *UseCaseNotify) DeleteNotifyInCash(ctx context.Context, notifyID string) error {
-	key := BuildKey(notifyID)
+func (u *UseCase) DeleteNotifyInCash(ctx context.Context, notifyID string) error {
+	key := buildKey(notifyID)
 	if err := u.cache.DeleteNotifyInCash(ctx, key); err != nil {
 		return fmt.Errorf("DeleteNotifyInCash: %w", err)
 	}
