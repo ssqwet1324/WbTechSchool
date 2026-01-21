@@ -19,14 +19,14 @@ type RepositoryProvider interface {
 	GetChildren(ctx context.Context, parentID string, limit, offset int) (*[]entity.NewComment, error)
 }
 
-// UseCaseComment - структура бизнес логики
-type UseCaseComment struct {
+// UseCase - структура бизнес логики
+type UseCase struct {
 	repo RepositoryProvider
 }
 
 // New конструктор usecase
-func New(repo RepositoryProvider) *UseCaseComment {
-	return &UseCaseComment{
+func New(repo RepositoryProvider) *UseCase {
+	return &UseCase{
 		repo: repo,
 	}
 }
@@ -37,7 +37,7 @@ func createNewCommentID() string {
 }
 
 // AddComment - создать комментарий
-func (uc *UseCaseComment) AddComment(ctx context.Context, comment entity.NewComment) (*entity.NewComment, error) {
+func (uc *UseCase) AddComment(ctx context.Context, comment entity.NewComment) (*entity.NewComment, error) {
 	newID := createNewCommentID()
 	comment.CommentID = newID
 	comment.CreatedAt = time.Now()
@@ -52,12 +52,12 @@ func (uc *UseCaseComment) AddComment(ctx context.Context, comment entity.NewComm
 }
 
 // DeleteComment - удалить комментарий
-func (uc *UseCaseComment) DeleteComment(ctx context.Context, commentID string) error {
+func (uc *UseCase) DeleteComment(ctx context.Context, commentID string) error {
 	return uc.repo.DeleteComment(ctx, commentID)
 }
 
 // SearchComment - поиск комментария
-func (uc *UseCaseComment) SearchComment(ctx context.Context, text string) (*[]entity.NewComment, error) {
+func (uc *UseCase) SearchComment(ctx context.Context, text string) (*[]entity.NewComment, error) {
 	data, err := uc.repo.SearchComment(ctx, text)
 	if err != nil {
 		zlog.Logger.Error().Err(err).Msg("UseCase: Failed to search comment")
@@ -68,12 +68,12 @@ func (uc *UseCaseComment) SearchComment(ctx context.Context, text string) (*[]en
 }
 
 // GetParentComments - получить родительский комент
-func (uc *UseCaseComment) GetParentComments(ctx context.Context) (*[]entity.NewComment, error) {
+func (uc *UseCase) GetParentComments(ctx context.Context) (*[]entity.NewComment, error) {
 	return uc.repo.GetParentComments(ctx)
 }
 
 // GetChildren - получить дочерние комментарии с пагинацией
-func (uc *UseCaseComment) GetChildren(ctx context.Context, parentID string, limitStr, offsetStr string) (*[]entity.NewComment, error) {
+func (uc *UseCase) GetChildren(ctx context.Context, parentID string, limitStr, offsetStr string) (*[]entity.NewComment, error) {
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
 		zlog.Logger.Error().Err(err).Msg("UseCase: Failed to parse limit")

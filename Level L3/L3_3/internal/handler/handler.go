@@ -12,11 +12,11 @@ import (
 
 // CommentHandler хендлер
 type CommentHandler struct {
-	uc *usecase.UseCaseComment
+	uc *usecase.UseCase
 }
 
 // New конструктор хендлера
-func New(uc *usecase.UseCaseComment) *CommentHandler {
+func New(uc *usecase.UseCase) *CommentHandler {
 	return &CommentHandler{
 		uc: uc,
 	}

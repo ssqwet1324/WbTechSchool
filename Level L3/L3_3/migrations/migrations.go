@@ -13,11 +13,11 @@ import (
 // Migration - структура миграций
 type Migration struct {
 	repo *repository.Repository
-	cfg  *config.ServiceConfig
+	cfg  *config.Config
 }
 
 // New - конструктор
-func New(repo *repository.Repository, config *config.ServiceConfig) *Migration {
+func New(repo *repository.Repository, config *config.Config) *Migration {
 	return &Migration{repo: repo, cfg: config}
 }
 
@@ -26,22 +26,6 @@ func (m *Migration) InitTables(ctx context.Context) error {
 	zlog.Logger.Info().Msg("Начинаем создание таблиц для комментариев")
 
 	queries := []string{
-		//	// таблица, хранящая текст комментариев
-		//	`CREATE TABLE IF NOT EXISTS flat_comments (
-		//	id VARCHAR(255) PRIMARY KEY,
-		//	parent_id VARCHAR(255),
-		//	text TEXT NOT NULL,
-		//	created_at TIMESTAMP DEFAULT now()
-		//);`,
-		//
-		//	// таблица, хранящая структуру дерева комментариев
-		//	`CREATE TABLE IF NOT EXISTS comments (
-		//    id VARCHAR(255) PRIMARY KEY,
-		//    parent_id VARCHAR(255) REFERENCES comments(id) ON DELETE CASCADE,
-		//    comment_ref VARCHAR(255) NOT NULL REFERENCES flat_comments(id) ON DELETE CASCADE,
-		//    created_at TIMESTAMP DEFAULT now()
-		//);`,
-
 		`CREATE TABLE IF NOT EXISTS flat_comments (
     	id VARCHAR(255) PRIMARY KEY,
     	text TEXT NOT NULL,

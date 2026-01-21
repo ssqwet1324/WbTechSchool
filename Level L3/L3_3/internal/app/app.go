@@ -8,7 +8,6 @@ import (
 	"comment_tree/internal/usecase"
 	"comment_tree/migrations"
 	"context"
-	"fmt"
 
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/ginext"
@@ -25,46 +24,26 @@ func Run() {
 	// запускаем логгер
 	zlog.InitConsole()
 
-	serviceCfg := config.New()
-	if serviceCfg == nil {
-		zlog.Logger.Fatal().Msg("Failed to load config")
-		return
+	cfg, err := config.New()
+	if err != nil {
+		panic("Error loading config" + err.Error())
 	}
 
-	// че в логах
-	zlog.Logger.Info().
-		Str("db_host", serviceCfg.DbHost).
-		Int("db_port", serviceCfg.DbPort).
-		Str("db_name", serviceCfg.DbName).
-		Str("db_user", serviceCfg.DbUser).
-		Msg("Loaded configuration")
-
-	// подключение к бд
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		serviceCfg.DbUser,
-		serviceCfg.DbPassword,
-		serviceCfg.DbHost,
-		serviceCfg.DbPort,
-		serviceCfg.DbName,
-	)
-
-	zlog.Logger.Info().Str("dsn", dsn).Msg("Database connection string")
-
-	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    serviceCfg.MaxOpenConns,
-		MaxIdleConns:    serviceCfg.MaxIdleConns,
-		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime,
 	})
 
-	commentMigrations := migrations.New(repo, serviceCfg)
+	commentMigrations := migrations.New(repo, cfg)
 	if err := commentMigrations.InitTables(context.Background()); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
 
 	commentUseCase := usecase.New(repo)
-
 	commentHandler := handler.New(commentUseCase)
+
+	zlog.Logger.Info().Msg("Service started successfully")
 
 	server.POST("/comments", commentHandler.AddComment)
 	server.GET("/comments", commentHandler.GetComments)
@@ -73,11 +52,11 @@ func Run() {
 	server.POST("/comments/search", commentHandler.SearchComment)
 	server.GET("/comments/parents", commentHandler.GetParentComments)
 
-	// Раздача статики и корневая страница для фронта
+	// корневая страница для фронта
 	server.Static("/static", "./web")
 	server.GET("/", func(c *ginext.Context) { c.File("./web/index.html") })
 
 	if err := server.Run(":8081"); err != nil {
-		zlog.Logger.Fatal().Msg("Failed to run server")
+		zlog.Logger.Fatal().Err(err).Msg("Failed to run server")
 	}
 }

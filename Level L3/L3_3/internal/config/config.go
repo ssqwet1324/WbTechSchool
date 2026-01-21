@@ -1,15 +1,15 @@
 package config
 
 import (
-	"os"
+	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/wb-go/wbf/zlog"
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
-// ServiceConfig - конфиг
-type ServiceConfig struct {
+// Config - конфиг
+type Config struct {
 	DbName          string        `env:"DB_NAME"`
 	DbUser          string        `env:"DB_USER"`
 	DbPassword      string        `env:"DB_PASSWORD"`
@@ -24,57 +24,27 @@ type ServiceConfig struct {
 }
 
 // New - конструктор конфига
-func New() *ServiceConfig {
-	s := &ServiceConfig{
-		DbName:     getEnv("DB_NAME", "postgres"),
-		DbUser:     getEnv("DB_USER", "postgres"),
-		DbPassword: getEnv("DB_PASSWORD", "postgres"),
-		DbHost:     getEnv("DB_HOST", "localhost"),
-		TimeZone:   getEnv("TIMEZONE", "UTC"),
+func New() (*Config, error) {
+	var cfg Config
+
+	err := cleanenv.ReadEnv(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error reading config: %s", err)
 	}
 
-	// Целые числа
-	s.DbPort = getEnvInt("DB_PORT", 5432)
-	s.MaxRetries = getEnvInt("MAX_RETRIES", 3)
-	s.MaxOpenConns = getEnvInt("MAX_OPEN_CONNS", 10)
-	s.MaxIdleConns = getEnvInt("MAX_IDLE_CONNS", 5)
-
-	// Время
-	s.RetryDelay = getEnvDuration("RETRY_DELAY", 5*time.Second)
-	s.ConnMaxLifetime = getEnvDuration("CONN_MAX_LIFETIME", 30*time.Second)
-
-	zlog.Logger.Info().Msg("config loaded successfully")
-
-	return s
+	return &cfg, nil
 }
 
-// Вспомогательные функции
-func getEnv(key, defaultVal string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
+// CreateDsn - создание адреса подключения к бд
+func (cfg *Config) CreateDsn() string {
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DbUser,
+		cfg.DbPassword,
+		cfg.DbHost,
+		strconv.Itoa(cfg.DbPort),
+		cfg.DbName,
+	)
 
-	return defaultVal
-}
-
-// getEnvInt - получить int значение
-func getEnvInt(key string, defaultVal int) int {
-	if val := os.Getenv(key); val != "" {
-		if i, err := strconv.Atoi(val); err == nil {
-			return i
-		}
-	}
-
-	return defaultVal
-}
-
-// getEnvDuration получить временное значение
-func getEnvDuration(key string, defaultVal time.Duration) time.Duration {
-	if val := os.Getenv(key); val != "" {
-		if d, err := time.ParseDuration(val); err == nil {
-			return d
-		}
-	}
-
-	return defaultVal
+	return dsn
 }

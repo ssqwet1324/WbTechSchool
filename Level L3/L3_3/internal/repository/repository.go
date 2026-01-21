@@ -4,7 +4,6 @@ import (
 	"comment_tree/internal/entity"
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/zlog"
@@ -20,7 +19,7 @@ type Repository struct {
 func New(masterDSN string, options *dbpg.Options) *Repository {
 	masterDB, err := sql.Open("postgres", masterDSN)
 	if err != nil {
-		log.Fatalf("failed to open master DB: %v", err)
+		zlog.Logger.Fatal().Msgf("failed to open master DB: %v", err)
 	}
 
 	masterDB.SetMaxOpenConns(options.MaxOpenConns)
@@ -143,8 +142,7 @@ func (repo *Repository) SearchComment(ctx context.Context, text string) (*[]enti
 
 // GetParentComments - получить родительские комментарии
 func (repo *Repository) GetParentComments(ctx context.Context) (*[]entity.NewComment, error) {
-	query := `
-    SELECT c.id, c.parent_id, f.text, c.created_at
+	query := `SELECT c.id, c.parent_id, f.text, c.created_at
     FROM comments c
     JOIN flat_comments f ON c.comment_ref = f.id
     WHERE c.parent_id IS NULL
@@ -161,8 +159,7 @@ func (repo *Repository) GetParentComments(ctx context.Context) (*[]entity.NewCom
 
 // GetChildren - получить детей для одного родителя
 func (repo *Repository) GetChildren(ctx context.Context, parentID string, limit, offset int) (*[]entity.NewComment, error) {
-	query := `
-		SELECT c.id, c.parent_id, f.text, c.created_at
+	query := `SELECT c.id, c.parent_id, f.text, c.created_at
 		FROM comments c
 		JOIN flat_comments f ON c.comment_ref = f.id
 		WHERE c.parent_id = $1
