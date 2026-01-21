@@ -101,9 +101,8 @@ func (repo *Repository) CheckFreeSeats(ctx context.Context, eventID string, seat
 
 // MarkSeatAsReserving - помечаем место в бд как зарезервированное
 func (repo *Repository) MarkSeatAsReserving(ctx context.Context, eventID string, seatNumber int, userID string) error {
-	query := `UPDATE seats SET status='reserving', user_id=$1 WHERE event_id=$2 AND seat_number=$3 
-    AND status='free'
-    `
+	query := `UPDATE seats SET status='reserving', user_id=$1
+             WHERE event_id=$2 AND seat_number=$3 AND status='free'`
 
 	// помечаем место как потенциально зарезервированное
 	res, err := repo.DB.ExecContext(ctx, query, userID, eventID, seatNumber)
@@ -123,8 +122,7 @@ func (repo *Repository) MarkSeatAsReserving(ctx context.Context, eventID string,
 // ConfirmSeatBooking — финальное подтверждение после оплаты
 func (repo *Repository) ConfirmSeatBooking(ctx context.Context, eventID string, seatNumber int, userID string) error {
 	query := `UPDATE seats SET status='booked'
-		WHERE event_id=$1 AND seat_number=$2 AND user_id=$3 AND status='reserving'
-	`
+		WHERE event_id=$1 AND seat_number=$2 AND user_id=$3 AND status='reserving'`
 
 	// бронируем место после оплаты
 	res, err := repo.DB.ExecContext(ctx, query, eventID, seatNumber, userID)

@@ -24,7 +24,7 @@ type Seat struct {
 	UserID     string `json:"user_id"`
 }
 
-// CreateEventRequest - объедененный json
+// CreateEventRequest - объединенный json
 type CreateEventRequest struct {
 	Event  CreateEvent `json:"event"`
 	Layout TotalSeats  `json:"layout"`

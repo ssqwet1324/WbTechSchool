@@ -10,26 +10,37 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
-type RepositoryProvider interface {
+// DatabaseProvider - интерфейс бд
+type DatabaseProvider interface {
 	CreateEvent(ctx context.Context, event entity.CreateEvent, totalNumberSeats int, seatNumbers []int) error
 	CheckFreeSeats(ctx context.Context, eventID string, seatNumber int) (string, error)
 	MarkSeatAsReserving(ctx context.Context, eventID string, seatNumber int, userID string) error
 	ConfirmSeatBooking(ctx context.Context, eventID string, seatNumber int, userID string) error
-	//CleanupExpiredReservations(ctx context.Context, redisExist bool) error
 	CleanupExpiredReservations(ctx context.Context, eventID string, seatNumber int, redisExist bool) error
 	GetEventInfo(ctx context.Context, eventID string) (*entity.EventInfo, error)
 	GetAllEvents(ctx context.Context) ([]entity.CreateEvent, error)
+}
 
+// RedisProvider - интерфейс редиса
+type RedisProvider interface {
 	AddReserveSeat(ctx context.Context, key string, seat entity.Seat) (bool, error)
 	CheckReserveUser(ctx context.Context, key string, seat entity.Seat) error
 	RemoveReserveSeat(ctx context.Context, key string) error
 	CheckKeyInRedis(ctx context.Context, key string) (bool, error)
 }
 
+// RepositoryProvider - общий интерфейс
+type RepositoryProvider interface {
+	RedisProvider
+	DatabaseProvider
+}
+
+// UseCase - структура бизнес логики
 type UseCase struct {
 	repo RepositoryProvider
 }
 
+// New - конструктор
 func New(repo RepositoryProvider) *UseCase {
 	return &UseCase{
 		repo: repo,
@@ -151,6 +162,7 @@ func (uc *UseCase) GetEvent(ctx context.Context, eventID string) (*entity.EventI
 	return uc.repo.GetEventInfo(ctx, eventID)
 }
 
+// GetAllEvents - получить все события
 func (uc *UseCase) GetAllEvents(ctx context.Context) ([]entity.CreateEvent, error) {
 	return uc.repo.GetAllEvents(ctx)
 }

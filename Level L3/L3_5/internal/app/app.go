@@ -8,8 +8,6 @@ import (
 	"event_booker/internal/scheduler"
 	"event_booker/internal/usecase"
 	"event_booker/migrations"
-	"fmt"
-	"log"
 
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/ginext"
@@ -17,48 +15,29 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Run - запуск сервиса
 func Run() {
 	server := ginext.New("release")
 
 	// Logger
 	zlog.InitConsole()
 
-	serviceCfg, err := config.New()
-	if serviceCfg == nil || err != nil {
-		zlog.Logger.Fatal().Msg("Failed to load config")
-		return
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
 	}
 
-	// Логируем конфигурацию для отладки
-	zlog.Logger.Info().
-		Str("db_host", serviceCfg.DbHost).
-		Int("db_port", serviceCfg.DbPort).
-		Str("db_name", serviceCfg.DbName).
-		Str("db_user", serviceCfg.DbUser).
-		Msg("Loaded configuration")
+	redisClient := redis.New(cfg.RedisAddr, "", 0)
 
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		serviceCfg.DbUser,
-		serviceCfg.DbPassword,
-		serviceCfg.DbHost,
-		serviceCfg.DbPort,
-		serviceCfg.DbName,
-	)
-
-	zlog.Logger.Info().Str("dsn", dsn).Msg("Database connection string")
-
-	redisClient := redis.New(serviceCfg.RedisAddr, "", 0)
-
-	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    serviceCfg.MaxOpenConns,
-		MaxIdleConns:    serviceCfg.MaxIdleConns,
-		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime,
 	},
 		redisClient,
 	)
 
-	shortenerMigrations := migrations.New(repo, serviceCfg)
+	shortenerMigrations := migrations.New(repo, cfg)
 	if err := shortenerMigrations.InitTables(context.Background()); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
@@ -70,6 +49,8 @@ func Run() {
 	schedulerBooker := scheduler.New(useCase)
 	schedulerBooker.Start()
 	defer schedulerBooker.Stop()
+
+	zlog.Logger.Info().Msg("Service starting successfully")
 
 	// API routes
 	server.POST("/events", eventHandler.CreateEvent)
@@ -83,6 +64,6 @@ func Run() {
 	server.Engine.StaticFile("/", "./web/index.html")
 
 	if err := server.Run(":8081"); err != nil {
-		log.Fatal(err)
+		zlog.Logger.Fatal().Err(err).Msg("Error starting server")
 	}
 }
