@@ -15,6 +15,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Run - запуск сервиса
 func Run() {
 	server := ginext.New()
 

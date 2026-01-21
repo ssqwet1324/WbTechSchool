@@ -40,36 +40,36 @@ func New(masterDSN string, options *dbpg.Options) *Repository {
 	}
 }
 
-// AddShortUrl - добавить ссылку в бд
-func (repo *Repository) AddShortUrl(ctx context.Context, urls entity.ShortenURL) error {
+// AddShortURL - добавить ссылку в бд
+func (repo *Repository) AddShortURL(ctx context.Context, urls entity.ShortenURL) error {
 	query := `INSERT INTO short_urls (original_url, short_url) VALUES ($1, $2)`
 	res, err := repo.DB.ExecContext(ctx, query, urls.OriginalURL, urls.ShortURL)
 	if err != nil {
-		zlog.Logger.Error().Err(err).Msg("Repository: AddShortUrl: failed to add short url")
+		zlog.Logger.Error().Err(err).Msg("Repository: AddShortURL: failed to add short url")
 		return err
 	}
 
 	rows, err := res.RowsAffected()
 	if err != nil {
-		zlog.Logger.Error().Err(err).Msg("Repository: AddShortUrl: failed to check affected rows")
+		zlog.Logger.Error().Err(err).Msg("Repository: AddShortURL: failed to check affected rows")
 		return err
 	}
 	if rows == 0 {
-		zlog.Logger.Warn().Msg("Repository: AddShortUrl: no rows affected")
+		zlog.Logger.Warn().Msg("Repository: AddShortURL: no rows affected")
 		return err
 	}
 
 	return nil
 }
 
-// GetShortUrl - получить короткий url по оригинальному
-func (repo *Repository) GetShortUrl(ctx context.Context, originalURL string) (string, error) {
+// GetShortURL - получить короткий url по оригинальному
+func (repo *Repository) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	query := `SELECT short_url FROM short_urls WHERE original_url=$1`
 	var shortURL string
 	err := repo.DB.QueryRowContext(ctx, query, originalURL).Scan(&shortURL)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			zlog.Logger.Error().Err(err).Str("original_url", originalURL).Msg("Repository: GetShortUrl: failed to get short url")
+			zlog.Logger.Error().Err(err).Str("original_url", originalURL).Msg("Repository: GetShortURL: failed to get short url")
 		}
 		return "", err
 	}
@@ -92,11 +92,11 @@ func (repo *Repository) GetOriginalURL(ctx context.Context, shortURL string) (st
 	return originalURL, nil
 }
 
-// ExistsShortUrl - проверить есть ли такой url в бд
-func (repo *Repository) ExistsShortUrl(ctx context.Context, shortUrl string) (bool, error) {
+// ExistsShortURL - проверить есть ли такой url в бд
+func (repo *Repository) ExistsShortURL(ctx context.Context, shortURL string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM short_urls WHERE short_url = $1)`
 	var exists bool
-	err := repo.DB.QueryRowContext(ctx, query, shortUrl).Scan(&exists)
+	err := repo.DB.QueryRowContext(ctx, query, shortURL).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
@@ -173,7 +173,7 @@ func (repo *Repository) AddAnalytics(ctx context.Context, urls entity.ShortenURL
 }
 
 // GetAnalytics - получить аналитику о ссылке
-func (repo *Repository) GetAnalytics(ctx context.Context, shortUrl string) (*entity.ShortenURLAnalytics, error) {
+func (repo *Repository) GetAnalytics(ctx context.Context, shortURL string) (*entity.ShortenURLAnalytics, error) {
 	var agg struct {
 		Total       int
 		ByDay       []byte
@@ -183,7 +183,7 @@ func (repo *Repository) GetAnalytics(ctx context.Context, shortUrl string) (*ent
 
 	query := `SELECT total_clicks, clicks_by_day, clicks_by_month, clicks_by_user_agent FROM clicks_aggregate WHERE short_url = $1`
 
-	err := repo.DB.QueryRowContext(ctx, query, shortUrl).Scan(
+	err := repo.DB.QueryRowContext(ctx, query, shortURL).Scan(
 		&agg.Total,
 		&agg.ByDay,
 		&agg.ByMonth,
@@ -203,7 +203,7 @@ func (repo *Repository) GetAnalytics(ctx context.Context, shortUrl string) (*ent
 	_ = json.Unmarshal(agg.ByUserAgent, &byUserAgent)
 
 	analytics := &entity.ShortenURLAnalytics{
-		ShortURL:    shortUrl,
+		ShortURL:    shortURL,
 		TotalClicks: agg.Total,
 		ByDay:       byDay,
 		ByMonth:     byMonth,

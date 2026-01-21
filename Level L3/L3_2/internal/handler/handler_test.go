@@ -13,7 +13,7 @@ import (
 
 // UseCase Interface
 type UseCaseInterface interface {
-	AddShortUrl(ctx *gin.Context, req AddShortURLRequest) (string, error)
+	AddShortURL(ctx *gin.Context, req AddShortURLRequest) (string, error)
 	GetOriginalURL(ctx *gin.Context, shortURL string) (string, error)
 	AddAnalytics(ctx *gin.Context, analytics ShortURLAnalytics) error
 	GetAnalytics(ctx *gin.Context, shortURL string) (ShortURLAnalytics, error)
@@ -22,7 +22,7 @@ type UseCaseInterface interface {
 // Mock UseCase
 type mockUseCase struct{}
 
-func (m *mockUseCase) AddShortUrl(ctx *gin.Context, req AddShortURLRequest) (string, error) {
+func (m *mockUseCase) AddShortURL(ctx *gin.Context, req AddShortURLRequest) (string, error) {
 	return "test123", nil
 }
 
@@ -81,7 +81,7 @@ func (h *TestShortenerHandler) CreateShorten(ctx *gin.Context) {
 		return
 	}
 
-	shortURL, err := h.uc.AddShortUrl(ctx, req)
+	shortURL, err := h.uc.AddShortURL(ctx, req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

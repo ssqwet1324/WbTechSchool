@@ -15,18 +15,18 @@ import (
 
 // RepositoryProvider - интерфейс репы
 type RepositoryProvider interface {
-	AddShortUrl(ctx context.Context, urls entity.ShortenURL) error
-	GetShortUrl(ctx context.Context, url string) (string, error)
+	AddShortURL(ctx context.Context, urls entity.ShortenURL) error
+	GetShortURL(ctx context.Context, url string) (string, error)
 	AddAnalytics(ctx context.Context, urls entity.ShortenURLAnalytics) error
-	GetAnalytics(ctx context.Context, shortUrl string) (*entity.ShortenURLAnalytics, error)
-	ExistsShortUrl(ctx context.Context, shortUrl string) (bool, error)
+	GetAnalytics(ctx context.Context, shortURL string) (*entity.ShortenURLAnalytics, error)
+	ExistsShortURL(ctx context.Context, shortURL string) (bool, error)
 	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
 }
 
 // CacheProvider - интерфейс кеша
 type CacheProvider interface {
-	AddShortUrlInCache(ctx context.Context, key string, notifyCash []byte, ttl time.Duration) error
-	GetShortUrlFromCache(ctx context.Context, key string) (*entity.ShortenURL, error)
+	AddShortURLInCache(ctx context.Context, key string, notifyCash []byte, ttl time.Duration) error
+	GetShortURLFromCache(ctx context.Context, key string) (*entity.ShortenURL, error)
 }
 
 const (
@@ -79,34 +79,34 @@ func generateShortenURL(longURL string) string {
 	return result.String()[:6]
 }
 
-// AddShortUrl - добавляем сокращенную ссылку в бд
-func (uc *UseCase) AddShortUrl(ctx context.Context, urls entity.ShortenURL) (string, error) {
+// AddShortURL - добавляем сокращенную ссылку в бд
+func (uc *UseCase) AddShortURL(ctx context.Context, urls entity.ShortenURL) (string, error) {
 	// создаем короткую ссылку
-	shortUrl := generateShortenURL(urls.OriginalURL)
-	urls.ShortURL = shortUrl
+	shortURL := generateShortenURL(urls.OriginalURL)
+	urls.ShortURL = shortURL
 
 	// проверяем редис на наличие такой
-	if cachedUrl, err := uc.GetShortUrlFromCache(ctx, buildRedisKey(shortUrl)); err == nil && cachedUrl != "" {
-		zlog.Logger.Info().Msgf("Shorten URL already exists: %s", shortUrl)
-		return cachedUrl, nil
+	if cachedURL, err := uc.GetShortURLFromCache(ctx, buildRedisKey(shortURL)); err == nil && cachedURL != "" {
+		zlog.Logger.Info().Msgf("Shorten URL already exists: %s", shortURL)
+		return cachedURL, nil
 	}
 
 	// тут проверяем есть ли такой в бд
-	exist, err := uc.repository.ExistsShortUrl(ctx, urls.ShortURL)
+	exist, err := uc.repository.ExistsShortURL(ctx, urls.ShortURL)
 	if err != nil {
 		return "", err
 	}
 	if exist {
-		return shortUrl, nil
+		return shortURL, nil
 	}
 
 	// сохраняем в бд
-	if err := uc.repository.AddShortUrl(ctx, urls); err != nil {
+	if err := uc.repository.AddShortURL(ctx, urls); err != nil {
 		zlog.Logger.Warn().Err(err).Str("url", urls.OriginalURL).Msg("UseCase: Failed to add url")
 		return "", err
 	}
 
-	return shortUrl, nil
+	return shortURL, nil
 }
 
 // GetOriginalURL - получить оригинальный Url
@@ -130,7 +130,7 @@ func (uc *UseCase) AddAnalytics(ctx context.Context, urls entity.ShortenURLAnaly
 	}
 
 	// проверяем есть ли популярный в кеше
-	if cachedUrl, err := uc.GetShortUrlFromCache(ctx, buildRedisKey(urls.ShortURL)); err == nil && cachedUrl != "" {
+	if cachedURL, err := uc.GetShortURLFromCache(ctx, buildRedisKey(urls.ShortURL)); err == nil && cachedURL != "" {
 		return nil
 	}
 
@@ -148,8 +148,8 @@ func (uc *UseCase) AddAnalytics(ctx context.Context, urls entity.ShortenURLAnaly
 }
 
 // GetAnalytics - получаем аналитику
-func (uc *UseCase) GetAnalytics(ctx context.Context, shortUrl string) (*entity.ShortenURLAnalytics, error) {
-	return uc.repository.GetAnalytics(ctx, shortUrl)
+func (uc *UseCase) GetAnalytics(ctx context.Context, shortURL string) (*entity.ShortenURLAnalytics, error) {
+	return uc.repository.GetAnalytics(ctx, shortURL)
 }
 
 // ParseAnalytics - проверяем популярность URL за день
@@ -161,7 +161,7 @@ func (uc *UseCase) ParseAnalytics(ctx context.Context, analytics entity.ShortenU
 	// проверяем ссылку на популярность за день
 	if val, exist := analytics.ByDay[date]; exist && val > countPopular {
 		shorten.ShortURL = analytics.ShortURL
-		if err := uc.AddShortUrlInCache(ctx, buildRedisKey(analytics.ShortURL), shorten); err != nil {
+		if err := uc.AddShortURLInCache(ctx, buildRedisKey(analytics.ShortURL), shorten); err != nil {
 			zlog.Logger.Error().Err(err).Str("url", analytics.ShortURL).Msg("UseCase: Failed to add url in cache")
 			return false, err
 		}
@@ -171,21 +171,21 @@ func (uc *UseCase) ParseAnalytics(ctx context.Context, analytics entity.ShortenU
 	return false, nil
 }
 
-// AddShortUrlInCache - добавляем данные в кеш
-func (uc *UseCase) AddShortUrlInCache(ctx context.Context, key string, notifyCash entity.ShortenURL) error {
+// AddShortURLInCache - добавляем данные в кеш
+func (uc *UseCase) AddShortURLInCache(ctx context.Context, key string, notifyCash entity.ShortenURL) error {
 	data, err := json.Marshal(notifyCash)
 	if err != nil {
 		return err
 	}
 
-	return uc.cache.AddShortUrlInCache(ctx, key, data, TTLPopularURL)
+	return uc.cache.AddShortURLInCache(ctx, key, data, TTLPopularURL)
 }
 
-// GetShortUrlFromCache - получить данные с кеша
-func (uc *UseCase) GetShortUrlFromCache(ctx context.Context, key string) (string, error) {
-	data, err := uc.cache.GetShortUrlFromCache(ctx, key)
+// GetShortURLFromCache - получить данные с кеша
+func (uc *UseCase) GetShortURLFromCache(ctx context.Context, key string) (string, error) {
+	data, err := uc.cache.GetShortURLFromCache(ctx, key)
 	if err != nil {
-		zlog.Logger.Info().Err(err).Str("key", key).Msg("GetShortUrlFromCache")
+		zlog.Logger.Info().Err(err).Str("key", key).Msg("GetShortURLFromCache")
 		return "", err
 	}
 

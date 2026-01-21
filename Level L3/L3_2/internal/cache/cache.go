@@ -11,21 +11,23 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Cache - структура кеша
 type Cache struct {
 	redis redis.Client
 }
 
+// New - конструктор кеша
 func New(redis redis.Client) *Cache {
 	return &Cache{redis: redis}
 }
 
-// AddShortUrlInCache - добавляем уведомление в кеш
-func (c *Cache) AddShortUrlInCache(ctx context.Context, key string, notifyCash []byte, ttl time.Duration) error {
+// AddShortURLInCache - добавляем уведомление в кеш
+func (c *Cache) AddShortURLInCache(ctx context.Context, key string, notifyCash []byte, ttl time.Duration) error {
 	return c.redis.SetWithExpiration(ctx, key, notifyCash, ttl)
 }
 
-// GetShortUrlFromCache - получить url из кеша
-func (c *Cache) GetShortUrlFromCache(ctx context.Context, key string) (*entity.ShortenURL, error) {
+// GetShortURLFromCache - получить url из кеша
+func (c *Cache) GetShortURLFromCache(ctx context.Context, key string) (*entity.ShortenURL, error) {
 	var urls entity.ShortenURL
 
 	val, err := c.redis.Get(ctx, key)

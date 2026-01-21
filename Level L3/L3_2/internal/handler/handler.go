@@ -11,16 +11,19 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// ShortenerHandler - структура обработчика ручек
 type ShortenerHandler struct {
 	uc *usecase.UseCase
 }
 
+// New - конструктор
 func New(uc *usecase.UseCase) *ShortenerHandler {
 	return &ShortenerHandler{
 		uc: uc,
 	}
 }
 
+// CreateShorten - создать короткую ссылку
 func (h *ShortenerHandler) CreateShorten(ctx *ginext.Context) {
 	var req entity.ShortenURL
 
@@ -32,7 +35,7 @@ func (h *ShortenerHandler) CreateShorten(ctx *ginext.Context) {
 	}
 
 	// сохраняем и отдаем короткий url
-	data, err := h.uc.AddShortUrl(ctx, req)
+	data, err := h.uc.AddShortURL(ctx, req)
 	if err != nil {
 		zlog.Logger.Error().Err(err).Msg("Error add shorten url")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -44,12 +47,12 @@ func (h *ShortenerHandler) CreateShorten(ctx *ginext.Context) {
 
 // RedirectToShorten - перейти по короткой ссылке
 func (h *ShortenerHandler) RedirectToShorten(ctx *gin.Context) {
-	shortUrl := ctx.Param("short_url")
+	shortURL := ctx.Param("short_url")
 
 	// Получаем оригинальный URL
-	originalURL, err := h.uc.GetOriginalURL(ctx, shortUrl)
+	originalURL, err := h.uc.GetOriginalURL(ctx, shortURL)
 	if err != nil {
-		zlog.Logger.Error().Err(err).Str("short_url", shortUrl).Msg("short URL not found")
+		zlog.Logger.Error().Err(err).Str("short_url", shortURL).Msg("short URL not found")
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "short URL not found"})
 		return
 	}
@@ -60,7 +63,7 @@ func (h *ShortenerHandler) RedirectToShorten(ctx *gin.Context) {
 		ua := ctx.Request.UserAgent()
 
 		reqAnalytics := entity.ShortenURLAnalytics{
-			ShortURL:    shortUrl,
+			ShortURL:    shortURL,
 			TotalClicks: 1,
 			ByUserAgent: map[string]int{ua: 1},
 			ByDay:       map[string]int{time.Now().Format("2006-01-02"): 1},
@@ -69,7 +72,7 @@ func (h *ShortenerHandler) RedirectToShorten(ctx *gin.Context) {
 
 		// проверяем популярность URL
 		if err := h.uc.AddAnalytics(ctx, reqAnalytics); err != nil {
-			zlog.Logger.Error().Err(err).Str("short_url", shortUrl).Msg("Failed to add analytics")
+			zlog.Logger.Error().Err(err).Str("short_url", shortURL).Msg("Failed to add analytics")
 		}
 	}()
 
@@ -81,9 +84,9 @@ func (h *ShortenerHandler) RedirectToShorten(ctx *gin.Context) {
 
 // GetAnalytics - ручка для аналитики
 func (h *ShortenerHandler) GetAnalytics(ctx *gin.Context) {
-	shortUrl := ctx.Param("short_url")
+	shortURL := ctx.Param("short_url")
 
-	analytics, err := h.uc.GetAnalytics(ctx, shortUrl)
+	analytics, err := h.uc.GetAnalytics(ctx, shortURL)
 	if err != nil {
 		zlog.Logger.Error().Err(err).Msg("Error get analytics")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
