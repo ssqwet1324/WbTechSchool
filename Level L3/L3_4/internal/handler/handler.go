@@ -112,13 +112,13 @@ func (h *ImgHandler) GetProcessedImg(ctx *gin.Context) {
 		return
 	}
 
-	imgUrl, err := h.uc.GetProcessedImg(ctx, req)
+	imgURL, err := h.uc.GetProcessedImg(ctx, req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"img_url": imgUrl})
+	ctx.JSON(http.StatusOK, gin.H{"img_url": imgURL})
 }
 
 // DeletePhoto - ручка удаления фотографии

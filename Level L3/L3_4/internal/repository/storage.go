@@ -12,6 +12,8 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+const minioOpen = "localhost:9000"
+
 // UploadPhoto - загрузка исходного фото (из LoadPhoto)
 func (repo *Repository) UploadPhoto(ctx context.Context, bucketName string, photo entity.LoadPhoto) error {
 	objectName := fmt.Sprintf("%s_original.jpg", photo.ID)
@@ -76,8 +78,8 @@ func (repo *Repository) GetPhotoBytesByVersion(ctx context.Context, bucketName, 
 	return data, nil
 }
 
-// GetPhotoUrlByVersion - получение presigned URL для фронта
-func (repo *Repository) GetPhotoUrlByVersion(ctx context.Context, bucketName, photoID, version string) (string, error) {
+// GetPhotoURLByVersion - получение presigned URL для фронта
+func (repo *Repository) GetPhotoURLByVersion(ctx context.Context, bucketName, photoID, version string) (string, error) {
 	objectName := fmt.Sprintf("%s_%s.jpg", photoID, version)
 
 	// Проверяем наличие объекта
@@ -89,14 +91,14 @@ func (repo *Repository) GetPhotoUrlByVersion(ctx context.Context, bucketName, ph
 	// создаем объект-ссылку для формирования url
 	url, err := repo.Client.PresignedGetObject(ctx, bucketName, objectName, time.Hour*24, nil)
 	if err != nil {
-		zlog.Logger.Error().Err(err).Str("objectName", objectName).Msg("GetPhotoUrlByVersion: error generating presigned URL")
+		zlog.Logger.Error().Err(err).Str("objectName", objectName).Msg("GetPhotoURLByVersion: error generating presigned URL")
 		return "", err
 	}
 
 	// берем нужные поля для формирования url
 	var minioImg entity.MinIOObject
 	minioImg.Scheme = url.Scheme
-	minioImg.Host = "localhost:9000" // для открытия фото в браузере
+	minioImg.Host = minioOpen // для открытия фото в браузере
 	minioImg.Path = url.Path
 
 	// формируем url
@@ -105,6 +107,7 @@ func (repo *Repository) GetPhotoUrlByVersion(ctx context.Context, bucketName, ph
 	return fullURL, nil
 }
 
+// DeletePhotoFromMinIo - удалить фото из minio
 func (repo *Repository) DeletePhotoFromMinIo(ctx context.Context, bucketName string, photo entity.PhotoInfo) error {
 	// получаем все объекты с таким id
 	opts := minio.ListObjectsOptions{
@@ -126,8 +129,6 @@ func (repo *Repository) DeletePhotoFromMinIo(ctx context.Context, bucketName str
 		if err != nil {
 			zlog.Logger.Error().Err(err).Msg("DeletePhotoFromMinIo: error deleting object")
 			return err
-		} else {
-			zlog.Logger.Info().Msg("DeletePhotoFromMinIo: deleted object successfully")
 		}
 	}
 
@@ -139,10 +140,10 @@ func (repo *Repository) checkPhoto(ctx context.Context, bucketName, objectName s
 	_, err := repo.Client.StatObject(ctx, bucketName, objectName, minio.StatObjectOptions{})
 	if err != nil {
 		if minio.ToErrorResponse(err).Code == "NoSuchKey" || minio.ToErrorResponse(err).Code == "NoSuchObject" {
-			zlog.Logger.Error().Str("objectName", objectName).Msg("GetPhotoUrlByVersion: photo not found")
+			zlog.Logger.Error().Str("objectName", objectName).Msg("GetPhotoURLByVersion: photo not found")
 			return err
 		}
-		zlog.Logger.Error().Err(err).Str("objectName", objectName).Msg("GetPhotoUrlByVersion: error checking object existence")
+		zlog.Logger.Error().Err(err).Str("objectName", objectName).Msg("GetPhotoURLByVersion: error checking object existence")
 		return err
 	}
 

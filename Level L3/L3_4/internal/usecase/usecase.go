@@ -19,7 +19,7 @@ type RepositoryProvider interface {
 	UploadPhotoBytes(ctx context.Context, bucketName, objectName string, data []byte) error
 	ChangeStatus(ctx context.Context, photoID, status string) error
 	GetPhotoBytesByVersion(ctx context.Context, bucketName, photoID, version string) ([]byte, error)
-	GetPhotoUrlByVersion(ctx context.Context, bucketName, photoID, version string) (string, error)
+	GetPhotoURLByVersion(ctx context.Context, bucketName, photoID, version string) (string, error)
 	DeletePhoto(ctx context.Context, photoID string) error
 	DeletePhotoFromMinIo(ctx context.Context, bucketName string, photo entity.PhotoInfo) error
 }
@@ -27,11 +27,11 @@ type RepositoryProvider interface {
 // UseCase - структура бизнес-логики
 type UseCase struct {
 	repo RepositoryProvider
-	cfg  *config.ServiceConfig
+	cfg  *config.Config
 }
 
 // New - конструктор
-func New(repo RepositoryProvider, cfg *config.ServiceConfig) *UseCase {
+func New(repo RepositoryProvider, cfg *config.Config) *UseCase {
 	return &UseCase{repo: repo, cfg: cfg}
 }
 
@@ -156,7 +156,7 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 	}
 
 	// Генерируем presigned URL для фронта
-	url, err := uc.repo.GetPhotoUrlByVersion(ctx, photo.BucketName, photo.PhotoID, photo.Version)
+	url, err := uc.repo.GetPhotoURLByVersion(ctx, photo.BucketName, photo.PhotoID, photo.Version)
 	if err != nil {
 		zlog.Logger.Error().Err(err).Str("objectName", objectName).Msg("PhotoProcessing: failed to generate presigned URL")
 		return "", err
@@ -168,15 +168,15 @@ func (uc *UseCase) PhotoProcessing(ctx context.Context, photo entity.PhotoInfo) 
 // GetProcessedImg - получить url по версии фото
 func (uc *UseCase) GetProcessedImg(ctx context.Context, info entity.PhotoInfo) (string, error) {
 	info.BucketName = uc.cfg.BucketName
-	imgProcessedUrl, err := uc.repo.GetPhotoUrlByVersion(ctx, info.BucketName, info.PhotoID, info.Version)
-	if err != nil || imgProcessedUrl == "" {
+	imgProcessedURL, err := uc.repo.GetPhotoURLByVersion(ctx, info.BucketName, info.PhotoID, info.Version)
+	if err != nil || imgProcessedURL == "" {
 		zlog.Logger.Error().Err(err).Msg("GetProcessedImg: failed to get processed url")
 		return "", err
 	}
 
-	zlog.Logger.Info().Str("finally url", imgProcessedUrl).Msg("GetProcessedImg: processed url")
+	zlog.Logger.Info().Str("finally url", imgProcessedURL).Msg("GetProcessedImg: processed url")
 
-	return imgProcessedUrl, nil
+	return imgProcessedURL, nil
 }
 
 // DeletePhoto - удалить фото

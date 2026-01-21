@@ -2,20 +2,16 @@
   postgres:
     image: postgres:alpine
     container_name: postgres
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: always
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -84,22 +80,11 @@
     container_name: image_processor
     ports:
       - "8081:8081"
-    environment:
-      DB_NAME: postgres
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_HOST: postgres
-      DB_PORT: 5432
-      TIMEZONE: Europe/Moscow
-      MINIO_ENDPOINT: minio:9000  # Add MinIO endpoint
-      MINIO_ACCESS_KEY: minioadmin  # Match MinIO service credentials
-      MINIO_SECRET_KEY: minioadmin  # Match MinIO service credentials
-      MINIO_USE_SSL: "false"  # Disable SSL since MinIO is not using HTTPS
+    env_file:
+      - .env
     depends_on:
-      postgres:
-        condition: service_healthy
-      minio: # Add dependency on MinIO
-        condition: service_started
+      - postgres
+      - minio
     networks:
       - app-network
     restart: always
@@ -110,3 +95,4 @@ networks:
 
 volumes:
   minio-data:
+  postgres_data:

@@ -18,11 +18,11 @@ type Repository struct {
 	DB     *dbpg.DB
 	Client *minio.Client
 	master *dbpg.Options
-	cfg    *config.ServiceConfig
+	cfg    *config.Config
 }
 
 // New - конструктор для репы
-func New(masterDSN string, options *dbpg.Options, cfg *config.ServiceConfig) *Repository {
+func New(masterDSN string, options *dbpg.Options, cfg *config.Config) *Repository {
 	masterDB, err := sql.Open("postgres", masterDSN)
 	if err != nil {
 		log.Fatalf("failed to open master DB: %v", err)
@@ -54,7 +54,7 @@ func New(masterDSN string, options *dbpg.Options, cfg *config.ServiceConfig) *Re
 
 // AddPhotoInfo - добавить информацию о фото в бд
 func (repo *Repository) AddPhotoInfo(ctx context.Context, photo entity.LoadPhoto) error {
-	query := `Insert into photos (id, name, status, created_at) values ($1, $2, $3, $4)`
+	query := `INSERT INTO photos (id, name, status, created_at) VALUES ($1, $2, $3, $4)`
 
 	_, err := repo.DB.ExecContext(ctx, query, photo.ID, photo.Name, photo.Status, photo.CreatedAt)
 	if err != nil {
@@ -67,7 +67,7 @@ func (repo *Repository) AddPhotoInfo(ctx context.Context, photo entity.LoadPhoto
 
 // ChangeStatus - изменяем статус фото, если оно успешно загрузилось в minio
 func (repo *Repository) ChangeStatus(ctx context.Context, photoID, status string) error {
-	query := `Update photos set status = $1 where id = $2`
+	query := `UPDATE photos SET status = $1 WHERE id = $2`
 
 	_, err := repo.DB.ExecContext(ctx, query, status, photoID)
 	if err != nil {

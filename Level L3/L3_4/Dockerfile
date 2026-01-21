@@ -1,4 +1,4 @@
-﻿FROM golang:1.24.5-alpine
+﻿FROM golang:1.25.3-alpine
 
 # Устанавливаем зависимости для bimg
 RUN apk add --no-cache build-base vips-dev

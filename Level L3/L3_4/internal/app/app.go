@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"image_processor/internal/config"
 	"image_processor/internal/handler"
 	appKafka "image_processor/internal/kafka"
@@ -18,6 +17,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Run - запуск
 func Run() {
 	server := ginext.New("release")
 
@@ -27,49 +27,29 @@ func Run() {
 	zlog.InitConsole()
 
 	// загружаем конфиг
-	serviceCfg := config.New()
-	if serviceCfg == nil {
-		zlog.Logger.Fatal().Msg("Failed to load config")
-		return
+	cfg, err := config.New()
+	if err != nil {
+		panic("Error loading config: " + err.Error())
 	}
 
-	// логируем конфигурацию
-	zlog.Logger.Info().
-		Str("db_host", serviceCfg.DbHost).
-		Int("db_port", serviceCfg.DbPort).
-		Str("db_name", serviceCfg.DbName).
-		Str("db_user", serviceCfg.DbUser).
-		Msg("Loaded configuration")
-
-	// подключение к БД
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		serviceCfg.DbUser,
-		serviceCfg.DbPassword,
-		serviceCfg.DbHost,
-		serviceCfg.DbPort,
-		serviceCfg.DbName,
-	)
-
-	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    serviceCfg.MaxOpenConns,
-		MaxIdleConns:    serviceCfg.MaxIdleConns,
-		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
-	}, serviceCfg)
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime,
+	}, cfg)
 
 	// миграции
-	imgMigrations := migrations.New(repo, serviceCfg)
+	imgMigrations := migrations.New(repo, cfg)
 	if err := imgMigrations.InitTables(context.Background()); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
 
 	// usecase
-	imgUseCase := usecase.New(repo, serviceCfg)
+	imgUseCase := usecase.New(repo, cfg)
 
 	// кафка
-	//TODO вынести в кфг
-	consumer := kafka.NewConsumer([]string{serviceCfg.KafkaAddr}, serviceCfg.KafkaTopic, serviceCfg.KafkaGroupId)
-	producer := kafka.NewProducer([]string{serviceCfg.KafkaAddr}, serviceCfg.KafkaTopic)
+	consumer := kafka.NewConsumer([]string{cfg.KafkaAddr}, cfg.KafkaTopic, cfg.KafkaGroupID)
+	producer := kafka.NewProducer([]string{cfg.KafkaAddr}, cfg.KafkaTopic)
 
 	// создаем очередь
 	queue := appKafka.New(consumer, producer, imgUseCase)
@@ -94,6 +74,8 @@ func Run() {
 
 	// инициализация HTTP handler
 	imgHandler := handler.New(imgUseCase, queue)
+
+	zlog.Logger.Info().Msg("Service started successfully")
 
 	server.POST("/upload", imgHandler.UploadImage)
 	server.POST("/process", imgHandler.PhotoProcessing)
