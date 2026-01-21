@@ -20,7 +20,7 @@
 
 -   **База данных**: PostgreSQL
 -   **Клиент Redis**: Go-Redis v8 (`github.com/go-redis/redis/v8`)
--   **Переменные окружения**: godotenv (`github.com/joho/godotenv`)
+-   **Переменные окружения**: cleanenv (`github.com/ilyakaznacheev/cleanenv`)
 
 Все зависимости устанавливаются автоматически через:
 ```bash
