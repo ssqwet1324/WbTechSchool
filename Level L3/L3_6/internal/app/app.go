@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"sales_tracker/internal/config"
 	"sales_tracker/internal/handler"
 	"sales_tracker/internal/middleware"
@@ -15,6 +14,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// Run - запуск сервиса
 func Run() {
 	server := ginext.New("release")
 
@@ -22,29 +22,20 @@ func Run() {
 
 	zlog.InitConsole()
 
-	serviceCfg, err := config.New()
-	if serviceCfg == nil || err != nil {
+	cfg, err := config.New()
+	if cfg == nil || err != nil {
 		zlog.Logger.Fatal().Msg("Failed to load config")
 		return
 	}
 
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		serviceCfg.DbUser,
-		serviceCfg.DbPassword,
-		serviceCfg.DbHost,
-		serviceCfg.DbPort,
-		serviceCfg.DbName,
-	)
-
-	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    serviceCfg.MaxOpenConns,
-		MaxIdleConns:    serviceCfg.MaxIdleConns,
-		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime,
 	},
 	)
 
-	itemsMigrations := migrations.New(repo, serviceCfg)
+	itemsMigrations := migrations.New(repo, cfg)
 	if err := itemsMigrations.InitTables(context.Background()); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
@@ -52,6 +43,8 @@ func Run() {
 	useCase := usecase.New(repo)
 
 	itemsHandler := handler.New(useCase)
+
+	zlog.Logger.Info().Msg("Service started successfully")
 
 	server.POST("/items", itemsHandler.CreateItem)
 	server.GET("/items", itemsHandler.GetItems)

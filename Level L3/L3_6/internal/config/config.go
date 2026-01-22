@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -33,4 +35,18 @@ func New() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// CreateDsn - создание адреса подключения к бд
+func (cfg *Config) CreateDsn() string {
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DbUser,
+		cfg.DbPassword,
+		cfg.DbHost,
+		strconv.Itoa(cfg.DbPort),
+		cfg.DbName,
+	)
+
+	return dsn
 }

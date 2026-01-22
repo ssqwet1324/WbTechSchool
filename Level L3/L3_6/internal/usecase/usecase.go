@@ -11,6 +11,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+// RepositoryProvider - интерфейс репозитория
 type RepositoryProvider interface {
 	AddItems(ctx context.Context, item entity.Item) error
 	GetItems(ctx context.Context, items entity.GetItems) ([]entity.Item, error)
@@ -19,16 +20,19 @@ type RepositoryProvider interface {
 	GetAnalytics(ctx context.Context, analytics entity.GetItemsFromAnalytics) (*entity.AnalyticsResult, error)
 }
 
+// UseCase - бизнес логика
 type UseCase struct {
 	repo RepositoryProvider
 }
 
+// New - конструктор
 func New(repo RepositoryProvider) *UseCase {
 	return &UseCase{
 		repo: repo,
 	}
 }
 
+// generateNewID - генерация нового id
 func generateNewID() string {
 	return uuid.New().String()
 }
@@ -55,7 +59,7 @@ func (uc *UseCase) AddItems(ctx context.Context, item entity.NewItem) (string, e
 
 	err := uc.repo.AddItems(ctx, itemStruct)
 	if err != nil {
-		return "", err
+		return "", errors.New("error adding item")
 	}
 
 	return newID, nil
@@ -84,7 +88,7 @@ func (uc *UseCase) UpdateItems(ctx context.Context, item entity.NewItem, itemID 
 
 	err := uc.repo.UpdateItems(ctx, itemStruct)
 	if err != nil {
-		return err
+		return errors.New("failed to update item")
 	}
 
 	return nil
@@ -94,7 +98,7 @@ func (uc *UseCase) UpdateItems(ctx context.Context, item entity.NewItem, itemID 
 func (uc *UseCase) DeleteItems(ctx context.Context, itemID string) error {
 	err := uc.repo.DeleteItems(ctx, itemID)
 	if err != nil {
-		return err
+		return errors.New("item could not be deleted")
 	}
 
 	return nil
@@ -104,7 +108,7 @@ func (uc *UseCase) DeleteItems(ctx context.Context, itemID string) error {
 func (uc *UseCase) GetAnalytics(ctx context.Context, analytics entity.GetItemsFromAnalytics) (*entity.AnalyticsResult, error) {
 	data, err := uc.repo.GetAnalytics(ctx, analytics)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("analytics unavailable")
 	}
 
 	return data, nil
@@ -112,10 +116,9 @@ func (uc *UseCase) GetAnalytics(ctx context.Context, analytics entity.GetItemsFr
 
 // SaveAnalyticsToCSV - получаем аналитику по заданному периоду и сохраняем в csv файл
 func (uc *UseCase) SaveAnalyticsToCSV(filename string, result entity.AnalyticsResult) error {
-	// сохраняем данные в CSV через отдельную функцию
 	err := analytics.SaveAnalyticsToCSV(filename, result)
 	if err != nil {
-		return err
+		return errors.New("saving analytics failed")
 	}
 
 	return nil

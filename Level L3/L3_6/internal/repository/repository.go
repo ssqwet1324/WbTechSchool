@@ -84,7 +84,8 @@ func (repo *Repository) GetItems(ctx context.Context, items entity.GetItems) ([]
 
 // UpdateItems - обновление данных в записи
 func (repo *Repository) UpdateItems(ctx context.Context, item entity.Item) error {
-	query := `UPDATE items SET title = $1, amount = $2, date = $3, category = $4, updated_at = $5 WHERE id = $6`
+	query := `UPDATE items SET title = $1, amount = $2, date = $3, category = $4, updated_at = $5
+             WHERE id = $6`
 	_, err := repo.DB.ExecContext(ctx, query, item.Title, item.Amount, item.Date, item.Category, item.UpdatedAt, item.ID)
 	if err != nil {
 		zlog.Logger.Error().Err(err).Msg("Repository: UpdateItems: failed to update item")
@@ -109,8 +110,6 @@ func (repo *Repository) DeleteItems(ctx context.Context, itemID string) error {
 
 // GetAnalytics - получение аналитики
 func (repo *Repository) GetAnalytics(ctx context.Context, analytics entity.GetItemsFromAnalytics) (*entity.AnalyticsResult, error) {
-	// оптимизированный запрос
-	// создаем временную таблицу с отфильтрованными значениями по датам и выполняем операции аналитики
 	query := `
 		WITH filtered AS (
 			SELECT amount
@@ -129,10 +128,11 @@ func (repo *Repository) GetAnalytics(ctx context.Context, analytics entity.GetIt
 		`
 
 	var result entity.AnalyticsResult
-	err := repo.DB.QueryRowContext(ctx, query, analytics.FromDate, analytics.ToDate, analytics.Category).Scan(&result.TotalCount, &result.TotalSum,
-		&result.AvgAmount, &result.Median, &result.P90)
+
+	err := repo.DB.QueryRowContext(ctx, query, analytics.FromDate, analytics.ToDate, analytics.Category).
+		Scan(&result.TotalCount, &result.TotalSum, &result.AvgAmount, &result.Median, &result.P90)
 	if err != nil {
-		zlog.Logger.Error().Err(err).Msg("Repository: GetAnalytics: failed to get items")
+		zlog.Logger.Warn().Err(err).Msg("Repository: GetAnalytics: failed to get items")
 		return nil, err
 	}
 

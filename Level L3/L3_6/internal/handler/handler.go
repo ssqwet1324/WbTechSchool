@@ -208,7 +208,6 @@ func parseDate(from, to string) (*time.Time, *time.Time, error) {
 
 		for _, layout := range layouts {
 			if t, err := time.Parse(layout, raw); err == nil {
-				// Если указана только дата без времени, уточним границы
 				if layout == "2006-01-02" {
 					if isFrom {
 						t = t.Truncate(24 * time.Hour) // 00:00:00
