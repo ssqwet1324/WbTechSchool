@@ -34,11 +34,11 @@ const (
 // UseCase - бизнес логика
 type UseCase struct {
 	repo RepositoryProvider
-	cfg  *config.ServiceConfig
+	cfg  *config.Config
 }
 
 // New - конструктор бизнес логики
-func New(repo RepositoryProvider, cfg *config.ServiceConfig) *UseCase {
+func New(repo RepositoryProvider, cfg *config.Config) *UseCase {
 	return &UseCase{
 		repo: repo,
 		cfg:  cfg,
@@ -63,9 +63,6 @@ func (uc *UseCase) GenerateJwtToken(user entity.User, secretKey string) (string,
 		zlog.Logger.Error().Err(err).Msg("failed to sign token")
 		return "", err
 	}
-
-	// Для отладки
-	zlog.Logger.Info().Str("token", tokenString).Msg("token generated")
 
 	return tokenString, nil
 }

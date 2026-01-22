@@ -11,7 +11,7 @@ import (
 )
 
 // ServerMiddleware - мидлвара для ролей
-func ServerMiddleware(cfg *config.ServiceConfig) ginext.HandlerFunc {
+func ServerMiddleware(cfg *config.Config) ginext.HandlerFunc {
 	return func(ctx *ginext.Context) {
 		// берем заголовок
 		authHeader := ctx.GetHeader("Authorization")

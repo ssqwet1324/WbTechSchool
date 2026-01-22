@@ -13,11 +13,11 @@ import (
 // Migration - миграции
 type Migration struct {
 	repo *repository.Repository
-	cfg  *config.ServiceConfig
+	cfg  *config.Config
 }
 
 // New - конструктор миграций
-func New(repo *repository.Repository, cfg *config.ServiceConfig) *Migration {
+func New(repo *repository.Repository, cfg *config.Config) *Migration {
 	return &Migration{
 		repo: repo,
 		cfg:  cfg,

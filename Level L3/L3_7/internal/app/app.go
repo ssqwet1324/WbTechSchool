@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"warehouse_control/internal/config"
 	"warehouse_control/internal/handler"
 	"warehouse_control/internal/middleware"
@@ -22,36 +21,28 @@ func Run() {
 
 	zlog.InitConsole()
 
-	serviceCfg, err := config.New()
-	if serviceCfg == nil || err != nil {
-		zlog.Logger.Fatal().Msg("Failed to load config")
-		return
+	cfg, err := config.New()
+	if cfg == nil || err != nil {
+		panic("Error loading config")
 	}
 
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		serviceCfg.DbUser,
-		serviceCfg.DbPassword,
-		serviceCfg.DbHost,
-		serviceCfg.DbPort,
-		serviceCfg.DbName,
-	)
-
-	repo := repository.New(dsn, &dbpg.Options{
-		MaxOpenConns:    serviceCfg.MaxOpenConns,
-		MaxIdleConns:    serviceCfg.MaxIdleConns,
-		ConnMaxLifetime: serviceCfg.ConnMaxLifetime,
+	repo := repository.New(cfg.CreateDsn(), &dbpg.Options{
+		MaxOpenConns:    cfg.MaxOpenConns,
+		MaxIdleConns:    cfg.MaxIdleConns,
+		ConnMaxLifetime: cfg.ConnMaxLifetime,
 	},
 	)
 
-	allMigrations := migrations.New(repo, serviceCfg)
+	allMigrations := migrations.New(repo, cfg)
 	if err := allMigrations.RunMigrations(); err != nil {
 		zlog.Logger.Fatal().Err(err).Msg("Не удалось создать таблицы")
 	}
 
-	useCase := usecase.New(repo, serviceCfg)
+	useCase := usecase.New(repo, cfg)
 
 	productHandler := handler.New(useCase)
+
+	zlog.Logger.Info().Msg("Service started successfully")
 
 	// публичные ручки
 	userGroup := server.Group("/user")
@@ -59,7 +50,7 @@ func Run() {
 	userGroup.POST("/login", productHandler.Login)
 
 	//ручки по ролям
-	roleGroup := server.Group("/api/v1", middleware.ServerMiddleware(serviceCfg))
+	roleGroup := server.Group("/api/v1", middleware.ServerMiddleware(cfg))
 	roleGroup.POST("/items", productHandler.CreateProduct)
 	roleGroup.GET("/items/:product_name", productHandler.GetProduct)
 	roleGroup.GET("/items", productHandler.GetAllProduct)

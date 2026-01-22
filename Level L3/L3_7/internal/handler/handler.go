@@ -153,5 +153,4 @@ func (h *Handler) SaveProductLogToCSV(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 }

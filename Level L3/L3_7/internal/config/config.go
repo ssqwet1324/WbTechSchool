@@ -1,14 +1,16 @@
 package config
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/wb-go/wbf/zlog"
 )
 
-// ServiceConfig - конфиг
-type ServiceConfig struct {
+// Config - конфиг
+type Config struct {
 	DbName                string        `env:"DB_NAME" env-default:"postgres"`
 	DbUser                string        `env:"DB_USER" env-default:"postgres"`
 	DbPassword            string        `env:"DB_PASSWORD" env-default:"postgres"`
@@ -25,8 +27,8 @@ type ServiceConfig struct {
 }
 
 // New - конструктор конфига
-func New() (*ServiceConfig, error) {
-	var cfg ServiceConfig
+func New() (*Config, error) {
+	var cfg Config
 
 	err := cleanenv.ReadEnv(&cfg)
 	if err != nil {
@@ -37,4 +39,18 @@ func New() (*ServiceConfig, error) {
 	zlog.Logger.Info().Any("cfg", cfg).Msg("config loaded successfully")
 
 	return &cfg, nil
+}
+
+// CreateDsn - создание адреса подключения к бд
+func (cfg *Config) CreateDsn() string {
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DbUser,
+		cfg.DbPassword,
+		cfg.DbHost,
+		strconv.Itoa(cfg.DbPort),
+		cfg.DbName,
+	)
+
+	return dsn
 }
