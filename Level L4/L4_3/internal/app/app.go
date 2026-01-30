@@ -8,7 +8,6 @@ import (
 	"L4_3/internal/repository"
 	"L4_3/internal/usecase"
 	"L4_3/internal/worker"
-	stdlog "log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -48,7 +47,9 @@ func Run() {
 	service.POST("/update_event", eventHandler.UpdateEvent)
 	service.POST("/delete_event", eventHandler.DeleteEvent)
 
+	appLogger.AsyncMessage("server starting")
+
 	if err := service.Run(":8080"); err != nil {
-		stdlog.Fatal(err)
+		appLogger.AsyncError("service run error", err)
 	}
 }
