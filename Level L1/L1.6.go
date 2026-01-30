@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// через контекст
+// printIntsCtx через контекст
 func printIntsCtx(ctx context.Context, nums <-chan int, done chan<- bool) {
 	for {
 		select {
@@ -22,7 +22,7 @@ func printIntsCtx(ctx context.Context, nums <-chan int, done chan<- bool) {
 	}
 }
 
-// через канал уведомления
+// PrintIntsStop через канал уведомления
 func PrintIntsStop(stop <-chan bool, nums <-chan int, done chan<- bool) {
 	for {
 		select {
@@ -37,7 +37,7 @@ func PrintIntsStop(stop <-chan bool, nums <-chan int, done chan<- bool) {
 	}
 }
 
-// по условию
+// PrintInts по условию
 func PrintInts(nums <-chan int, done chan<- bool) {
 	for n := range nums {
 		if n > 10 {
@@ -49,7 +49,7 @@ func PrintInts(nums <-chan int, done chan<- bool) {
 	}
 }
 
-// через runtime.Goexit
+// PrintIntsExit - через runtime.Goexit
 func PrintIntsExit(nums <-chan int, done chan<- bool) {
 	defer func() {
 		done <- true

@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // берем числа из списка с помощью горутины
 func GiveNums(nums ...int) <-chan int {
@@ -9,6 +12,7 @@ func GiveNums(nums ...int) <-chan int {
 	go func() {
 		for _, num := range nums {
 			c <- num
+			time.Sleep(time.Millisecond * 200)
 		}
 		close(c)
 	}()

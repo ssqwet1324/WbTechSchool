@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// отправляем данные в канал
+// Send - отправляем данные в канал
 func Send() <-chan int {
 	ch := make(chan int)
 	go func() {
