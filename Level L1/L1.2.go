@@ -4,12 +4,12 @@ import "fmt"
 
 func main() {
 	nums := []int{2, 4, 6, 8, 10}
-	done := make(chan bool)
+	done := make(chan struct{})
 
 	for _, n := range nums {
 		go func(x int) {
 			fmt.Println(x * x)
-			done <- true
+			done <- struct{}{}
 		}(n)
 	}
 
@@ -17,4 +17,6 @@ func main() {
 	for range nums {
 		<-done
 	}
+
+	close(done)
 }

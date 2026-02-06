@@ -9,18 +9,29 @@ import (
 func Send() <-chan int {
 	ch := make(chan int)
 	go func() {
+		ticker := time.NewTicker(time.Millisecond)
+		defer ticker.Stop()
+		defer close(ch)
+
 		for i := 0; i < 1000; i++ {
+			<-ticker.C
 			ch <- i
-			time.Sleep(time.Millisecond)
 		}
-		close(ch)
 	}()
+
 	return ch
 }
 
 func main() {
 	ch := Send()
-	timeout := time.After(time.Second)
+
+	var seconds int
+	fmt.Println("Введите количество секунд")
+	if _, err := fmt.Scan(&seconds); err != nil {
+		panic("Введен некорректный символ")
+	}
+
+	timeout := time.After(time.Duration(seconds) * time.Second)
 
 	//тут берем данные с канала и выводим пока таймер не вышел
 	for {

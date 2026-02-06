@@ -4,63 +4,66 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"time"
 )
 
-// printIntsCtx через контекст
-func printIntsCtx(ctx context.Context, nums <-chan int, done chan<- bool) {
+// printIntsCtx — выход по контексту
+func printIntsCtx(ctx context.Context, nums <-chan int) {
 	for {
 		select {
-		case i := <-nums:
-			time.Sleep(time.Millisecond * 100)
-			fmt.Println("число:", i)
 		case <-ctx.Done():
-			fmt.Println(" конец контекста")
-			done <- true
+			fmt.Println("конец контекста")
 			return
+		case i, ok := <-nums:
+			if !ok {
+				fmt.Println("nums closed")
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+			fmt.Println("число:", i)
 		}
 	}
 }
 
-// PrintIntsStop через канал уведомления
-func PrintIntsStop(stop <-chan bool, nums <-chan int, done chan<- bool) {
+// PrintIntsStop — через канал уведомления
+func PrintIntsStop(stop <-chan struct{}, nums <-chan int) {
 	for {
 		select {
 		case <-stop:
 			fmt.Println("конец канал уведомлений")
-			done <- true
 			return
-		case i := <-nums:
-			time.Sleep(time.Millisecond * 100)
+		case i, ok := <-nums:
+			if !ok {
+				fmt.Println("nums closed")
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
 			fmt.Println("число:", i)
 		}
 	}
 }
 
-// PrintInts по условию
-func PrintInts(nums <-chan int, done chan<- bool) {
+// PrintInts — выход по условию
+func PrintInts(nums <-chan int) {
 	for n := range nums {
 		if n > 10 {
 			fmt.Println("выход по условию")
-			done <- true
 			return
 		}
 		fmt.Println("число:", n)
 	}
 }
 
-// PrintIntsExit - через runtime.Goexit
-func PrintIntsExit(nums <-chan int, done chan<- bool) {
-	defer func() {
-		done <- true
-	}()
+// PrintIntsExit — выход через runtime.Goexit
+func PrintIntsExit(nums <-chan int) {
 	for n := range nums {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(100 * time.Millisecond)
 		if n == 10 {
 			fmt.Println("выход через runtime.Goexit()")
 			runtime.Goexit()
 		}
-		fmt.Println("число: ", n)
+		fmt.Println("число:", n)
 	}
 }
 
@@ -68,44 +71,50 @@ func main() {
 	// выход по контексту
 	{
 		ch := make(chan int, 50)
-		done := make(chan bool)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		go printIntsCtx(ctx, ch, done)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			printIntsCtx(ctx, ch)
+		}()
 
 		go func() {
+			defer close(ch)
 			for i := 0; i < 1000; i++ {
 				select {
 				case <-ctx.Done():
-					close(ch)
 					return
-				default:
-					ch <- i
+				case ch <- i:
 					time.Sleep(time.Millisecond)
 				}
 			}
 		}()
 
-		<-done
+		wg.Wait()
 	}
 
-	//выход по каналу уведомлений
+	// выход по каналу уведомлений
 	{
 		ch := make(chan int, 50)
-		stop := make(chan bool)
-		done := make(chan bool)
+		stop := make(chan struct{})
 
-		go PrintIntsStop(stop, ch, done)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			PrintIntsStop(stop, ch)
+		}()
 
 		go func() {
+			defer close(ch)
 			for i := 0; i < 1000; i++ {
 				select {
 				case <-stop:
-					close(ch)
 					return
-				default:
-					ch <- i
+				case ch <- i:
 					time.Sleep(time.Millisecond)
 				}
 			}
@@ -113,43 +122,55 @@ func main() {
 
 		go func() {
 			time.Sleep(time.Second)
-			stop <- true
+			close(stop)
 		}()
 
-		<-done
+		wg.Wait()
 	}
 
 	// выход по условию
 	{
 		nums := make(chan int, 100)
-		done := make(chan bool)
 
-		go PrintInts(nums, done)
-
+		var wg sync.WaitGroup
+		wg.Add(1)
 		go func() {
-			for i := 0; i < 1000; i++ {
-				nums <- i
-				time.Sleep(time.Millisecond * 100)
-			}
-			close(nums)
+			defer wg.Done()
+			PrintInts(nums)
 		}()
 
-		<-done
+		go func() {
+			defer close(nums)
+			for i := 0; i < 1000; i++ {
+				nums <- i
+				time.Sleep(100 * time.Millisecond)
+			}
+		}()
+
+		wg.Wait()
 	}
-	//выход через runtime.Goexit()
+
+	// выход через runtime.Goexit()
 	{
 		nums := make(chan int, 100)
-		done := make(chan bool)
-		go PrintIntsExit(nums, done)
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			PrintIntsExit(nums)
+		}()
 
 		go func() {
+			defer close(nums)
 			for i := 0; i < 1000; i++ {
 				nums <- i
-				time.Sleep(time.Millisecond * 100)
+				time.Sleep(100 * time.Millisecond)
 			}
-			close(nums)
 		}()
-		<-done
+
+		wg.Wait()
 	}
+
 	fmt.Println("конец")
 }
