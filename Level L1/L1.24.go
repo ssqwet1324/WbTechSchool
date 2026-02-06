@@ -20,7 +20,11 @@ func NewPoint(x, y float64) *Point {
 }
 
 func main() {
-	p1 := NewPoint(1.0, 2.0)
-	p2 := NewPoint(2.0, 3.0)
+	var x1, y1, x2, y2 float64
+	if _, err := fmt.Scan(&x1, &y1, &x2, &y2); err != nil {
+		panic("Введено не число с плавающей запятой")
+	}
+	p1 := NewPoint(x1, y1)
+	p2 := NewPoint(x2, y2)
 	fmt.Println(p1.Distance(p2))
 }

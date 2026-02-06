@@ -11,34 +11,37 @@ type Counter struct {
 	value int
 }
 
-func (c *Counter) Increment(count int, stop chan bool) {
+func (c *Counter) Increment(count int) {
+	var wg sync.WaitGroup
+	wg.Add(count)
+
 	for i := 0; i < count; i++ {
 		go func() {
+			defer wg.Done()
+
 			c.mu.Lock()
-			defer c.mu.Unlock()
 			c.value++
-			time.Sleep(time.Millisecond * 100)
-			fmt.Println("Increment", c.value)
-			stop <- true
+			v := c.value
+			c.mu.Unlock()
+
+			time.Sleep(100 * time.Millisecond) // для имитации работы
+			fmt.Println("Increment", v)
 		}()
 	}
 
+	wg.Wait()
 }
 
 func (c *Counter) Value() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.value
 }
 
 func main() {
-	counter := &Counter{mu: sync.Mutex{}, value: 0}
+	counter := &Counter{}
 	countGoroutines := 100
-	stop := make(chan bool, countGoroutines)
 
-	counter.Increment(countGoroutines, stop)
-
-	for i := 0; i < countGoroutines; i++ {
-		<-stop
-	}
-
+	counter.Increment(countGoroutines)
 	fmt.Println("Counter Value:", counter.Value())
 }

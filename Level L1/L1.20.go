@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -35,6 +37,13 @@ func ReverseWordsRune(str string) {
 }
 
 func main() {
-	ReverseWords("snow dog sun")
-	ReverseWordsRune("snow dog sun")
+	fmt.Println("Введите строку:")
+	in, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	in = strings.TrimSpace(in)
+
+	// 1й способ
+	ReverseWords(in)
+	fmt.Println()
+	// 2й способ
+	ReverseWordsRune(in)
 }

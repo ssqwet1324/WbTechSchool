@@ -43,7 +43,8 @@ func CheckTypeSecondVersion(variable interface{}) {
 	}
 }
 
-func main() {
+// makeVals - тест значений
+func makeVals() []interface{} {
 	num := 1
 	str := "привет"
 	a := true
@@ -52,12 +53,18 @@ func main() {
 	chan3 := make(chan bool)
 	b := struct{}{}
 
-	vals := []interface{}{num, str, a, chan1, chan2, chan3, b}
+	return []interface{}{num, str, a, chan1, chan2, chan3, b}
+}
+
+func main() {
+	vals := makeVals()
+
 	fmt.Println("Первый способ")
 	for _, v := range vals {
 		CheckTypeFirstVersion(v)
 	}
-	fmt.Println("Второй способ способ")
+
+	fmt.Println("Второй способ")
 	for _, v := range vals {
 		CheckTypeSecondVersion(v)
 	}

@@ -1,21 +1,30 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
+
+// UniqueStrings слайс уникальных строк
+func UniqueStrings(input []string) []string {
+	set := make(map[string]struct{}, len(input))
+	for _, v := range input {
+		set[v] = struct{}{}
+	}
+
+	res := make([]string, 0, len(set))
+	for k := range set {
+		res = append(res, k)
+	}
+	return res
+}
 
 func main() {
 	sp1 := []string{"cat", "cat", "cat", "dog", "cat", "tree"}
-	mapa := make(map[string]struct{})
-	var result []string
+	fmt.Println(UniqueStrings(sp1))
 
-	//создаем ключ(т.к они не повторяются)
-	for _, v := range sp1 {
-		//как заглушка
-		mapa[v] = struct{}{}
-	}
+	sp2 := []string{"a", "b", "a", "c", "b", "d"}
+	fmt.Println(UniqueStrings(sp2))
 
-	for k, _ := range mapa {
-		result = append(result, k)
-	}
-
-	fmt.Println(result)
+	var sp3 []string
+	fmt.Println(UniqueStrings(sp3))
 }

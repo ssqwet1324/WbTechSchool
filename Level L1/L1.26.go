@@ -20,5 +20,9 @@ func IsUnique(str string) bool {
 }
 
 func main() {
-	fmt.Println(IsUnique("abCdeAf"))
+	var str string
+	if _, err := fmt.Scan(&str); err != nil {
+		panic("введены некорректные символы")
+	}
+	fmt.Println(IsUnique(str))
 }

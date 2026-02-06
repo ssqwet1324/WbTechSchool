@@ -26,7 +26,24 @@ func quickSort(array []int) []int {
 }
 
 func main() {
-	nums := []int{7, 2, 1, 6, 8, 5, 3, 4}
-	sortNums := quickSort(nums)
-	fmt.Println(sortNums)
+	nums1 := []int{7, 2, 1, 6, 8, 5, 3, 4}
+	fmt.Println(quickSort(nums1))
+
+	nums2 := []int{5, 4, 3, 2, 1}
+	fmt.Println(quickSort(nums2))
+
+	nums3 := []int{1, 2, 3, 4, 5}
+	fmt.Println(quickSort(nums3))
+
+	nums4 := []int{3, 1, 2, 3, 2, 1}
+	fmt.Println(quickSort(nums4))
+
+	nums5 := []int{42}
+	fmt.Println(quickSort(nums5))
+
+	var nums6 []int
+	fmt.Println(quickSort(nums6))
+
+	nums7 := []int{0, -10, 5, -3, 2}
+	fmt.Println(quickSort(nums7))
 }

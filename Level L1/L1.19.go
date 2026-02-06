@@ -11,7 +11,10 @@ func ReverseStr(str string) {
 }
 
 func main() {
-	ReverseStr("главрыба")
-	ReverseStr("главрыба👉")
-	ReverseStr("👉👈🧠🍒")
+	var symbol string
+	if _, err := fmt.Scan(&symbol); err != nil {
+		panic("введено не корректное значение")
+	}
+
+	ReverseStr(symbol)
 }

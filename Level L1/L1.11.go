@@ -2,25 +2,32 @@ package main
 
 import "fmt"
 
+// Intersection - пересечение
+func Intersection(a, b []int) []int {
+	set := make(map[int]struct{}, len(a))
+	for _, v := range a {
+		set[v] = struct{}{}
+	}
+
+	var res []int
+	for _, v := range b {
+		if _, ok := set[v]; ok {
+			res = append(res, v)
+		}
+	}
+	return res
+}
+
 func main() {
 	sp1 := []int{1, 2, 3}
 	sp2 := []int{2, 3, 4}
-	var result []int
+	fmt.Println(Intersection(sp1, sp2))
 
-	mn := make(map[int]struct{})
+	a := []int{10, 20, 30, 40}
+	b := []int{5, 10, 40, 50, 10}
+	fmt.Println(Intersection(a, b))
 
-	//создаем ключ
-	for _, v := range sp1 {
-		mn[v] = struct{}{}
-	}
-
-	//проверяем есть ли элемент в мапе
-	for _, v := range sp2 {
-		//если есть то пересекаются
-		if _, ok := mn[v]; ok {
-			result = append(result, v)
-		}
-	}
-
-	fmt.Println(result)
+	x := []int{7, 8, 9}
+	y := []int{1, 2, 3}
+	fmt.Println(Intersection(x, y))
 }
